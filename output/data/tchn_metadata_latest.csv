@@ -1,0 +1,45 @@
+Variable,Year,Description,Source,Link
+County,,,,
+State,,,,
+FIPS_Code,,,,
+NCHS_Score,2013,"National Center for Health Statistics (NCHS) urbanization code. 1 refers to a large, central metro county and 6 refers to a rural county.",National Center for Health Statistics,https://www.cdc.gov/nchs/data_access/urban_rural.htm
+Total_Population_2018,2018,,United States Census Bureau ,
+Total_Population_2020,2020,,United States Census Bureau ,
+Hispanic_Percent,2020,Percent of the population identifying as Hispanic.,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Median_Household_Income,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+GINI_Index,2020,"The GINI index is a measure of income inequality. According to the US Census Bureau, ""The Gini coefficient ranges from 0, indicating perfect equality (where everyone receives an equal share), to 1, perfect inequality (where only one recipient or group of recipients receives all the income).""",United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Unemployment_Rate,2021,Percent of the labor force that the Bureau of Labor Statistics defines as unemployed. See link for definitions. ,Unisted States Bureau of Labor Statistics,https://www.bls.gov/cps/definitions.htm
+Uninsured_Percentage,2019,Percent of the adult population that does not have health insurance.,United States Department of Health and Human Services,https://aspe.hhs.gov/reports/state-county-local-estimates-uninsured-population-prevalence-key-demographic-features
+SNAP_Percent,2020,Percent of households receiving SNAP assistance. ,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Poverty_Percent_All,2020,Percent of the population in poverty. ,United States Census Bureau,https://www2.census.gov/programs-surveys/saipe/datasets/2020/2020-state-and-county/
+Poverty_Percent_Under_18,2020,Percent of the population under that age of 18 in poverty. ,United States Census Bureau,https://www2.census.gov/programs-surveys/saipe/datasets/2020/2020-state-and-county/
+Veteran_Percentage,2020,Percent of the population that is a military veteran. ,United States Department of Veteran Affairs,https://www.va.gov/vetdata/veteran_population.asp
+Education_GED_Percent,2020,"Percent of the population, age 25 and older, with a GED.",United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Highschool_Percent,2020,"Percent of the population, age 25 and older, with a regular highschool diploma.",United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Bachelors_Percent,2020,"Percent of the population, age 25 and older, with a bachelors degree.",United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Masters_Percent,2020,"Percent of the population, age 25 and older, with a masters degree.",United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Professional_Percent,2020,"Percent of the population, age 25 and older, with a professional degree.",United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Doctorate_Percent,2020,"Percent of the population, age 25 and older, with a doctorate degree.",United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Alcohol_Abuse,2018,Percent of Medicare beneficiaries diagnosed with alcohol abuse as a chronic condition. ,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Autism_Spectrum_Disorders,2018,Percent of Medicare beneficiaries diagnosed with an autism spectrum disorder as a chronic condition. ,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Depression,2018,Percent of Medicare beneficiaries diagnosed with depression as a chronic condition. ,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Drug_Abuse_Substance_Abuse,2018,Percent of Medicare beneficiaries diagnosed with drug/substance abuse as a chronic condition. ,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Schizophrenia_Other_Psychotic_Disorders,2018,Percent of Medicare beneficiaries diagnosed with schizophrenia and other psychotic disorders as a chronic condition. ,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Opioid_Prescriptions_per_100,2020,"Number of opioid prescriptions filled per 100 people. From the CDC: ""For this database, a prescription is a new or refill prescription dispensed at a retail pharmacy in the sample and paid for by commercial insurance, Medicaid, Medicare, cash or its equivalent, and other third-party coverage. This database does not include mail order prescriptions.""",Centers for Disease Control and Prevention,https://www.cdc.gov/drugoverdose/rxrate-maps/county2020.html
+LCDC_Total,2020,Total number of licensed chemical dependency counselors.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LCDCs_per_100k,2020,Number of licensed chemical dependency counselors per 100 thousand people.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LCSW_Total,2020,Total number of licensed clinical social workers.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LCSWs_per_100k,2020,Number of licensed clinical social workers per 100 thousand people.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LPC_Total,2020,Total number of licensed profesional counselors.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LPCs_per_100k,2020,Number of licensed profesional counselors per 100 thousand people.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LBSW_Total,2020,Total number of licensed baccalaureate social workers.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LBSWs_per_100k,2020,Number of licensed baccalaureate social workers per 100 thousand people.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LMSW_Total,2020,Total number of licensed master social workers.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LMSWs_per_100k,2020,Number of licensed master social workers per 100 thousand people.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+PCP_Total,2020,Total number of primary care physicians.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+PCPs_per_100k,2020,Number of primary care physicians per 100 thousand people.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+Psychiatrists_Total,2020,Total number of psychiatrists.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+Psychiatrists_per_100k,2020,Number of psychiatrists per 100 thousand people.,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+I35_Corridor,,Indicates if the county is in the I35 corridor between San Antonio and Austin. ,,
+Total_Traffic_Fatalities,2020,Total traffic fatalities.,National Highway Traffic Safety Association,https://cdan.dot.gov/query
+Total_Traffic_Fatalities_BAC_.08,2020,Total traffic fatalities involving at least one driver with a BAC greater than .08.,National Highway Traffic Safety Association,https://cdan.dot.gov/query

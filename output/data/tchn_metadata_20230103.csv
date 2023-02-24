@@ -1,0 +1,48 @@
+Variable,Year,Description,Source,Link
+County,,,,
+State,,,,
+FIPS_Code,,,,
+NCHS_Score,2013,National Center for Health Statistics (NCHS) urbanization code,National Center for Health Statistics,
+Total_Population_2018,2018,,,
+Total_Population_2020,2020,,,
+Hispanic_Percent,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Median_Household_Income,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+GINI_Index,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Unemployment_Rate,2021,*,Unisted States Bureau of Labor Statistics,https://www.bls.gov/web/metro/laucntycur14.txt
+Uninsured_Percentage,2019,*,United States Department of Health and Human Services,https://aspe.hhs.gov/reports/state-county-local-estimates-uninsured-population-prevalence-key-demographic-features
+SNAP_Percent,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Poverty_Percent_All,2020,,United States Census Bureau,https://www2.census.gov/programs-surveys/saipe/datasets/2020/2020-state-and-county/
+Poverty_Percent_Under_18,2020,,United States Census Bureau,https://www2.census.gov/programs-surveys/saipe/datasets/2020/2020-state-and-county/
+Veteran_Percentage,2020,,United States Department of Veteran Affairs,https://www.va.gov/vetdata/veteran_population.asp
+Education_GED_Percent,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Highschool_Percent,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Bachelors_Percent,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Masters_Percent,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Professional_Percent,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Education_Doctorate_Percent,2020,,United States Census Bureau ACS 5-year Estimates,https://www.census.gov/programs-surveys/acs/about.html
+Alcohol_Abuse,2018,,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Autism_Spectrum_Disorders,2018,,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Depression,2018,,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Drug_Abuse_Substance_Abuse,2018,,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Schizophrenia_Other_Psychotic_Disorders,2018,,Centers for Medicare and Medicaid Services,https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Chronic-Conditions/CCDashboard
+Opioid_Prescriptions_per_100k,2020,,Centers for Disease Control and Prevention,https://www.cdc.gov/drugoverdose/rxrate-maps/county2020.html
+Alcohol_Establishments_per_Capita,2020,,United States Census Bureau,https://www.census.gov/programs-surveys/cbp.html
+LCDC_Total,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LCDCs_per_100k,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LCSW_Total,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LCSWs_per_100k,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LPC_Total,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LPCs_per_100k,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LBSW_Total,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LBSWs_per_100k,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LMSW_Total,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+LMSWs_per_100k,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+PCP_Total,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+PCPs_per_100k,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+Psychiatrists_Total,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+Psychiatrists_per_100k,2020,,Texas Department of State Health Services,https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
+I35_Corridor,,,,
+Total_Traffic_Fatalities,2020,,National Highway Traffic Safety Association,https://cdan.dot.gov/query
+Total_Traffic_Fatalities_BAC_.08,2020,,National Highway Traffic Safety Association,https://cdan.dot.gov/query
+Jail_Population_Total,2018,,Vera Institute,https://github.com/vera-institute/incarceration-trends
+Jail_Population_Pretrial,2018,,Vera Institute,https://github.com/vera-institute/incarceration-trends
