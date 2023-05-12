@@ -1,4 +1,6 @@
+private_scripts/*
 private_data/*
+output/data/archive/*
 design/*
 .Rhistory
 .DS_Store

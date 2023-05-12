@@ -3,7 +3,38 @@ setwd("~/Documents/Academics/TCHN")
 library('tidyverse')
 library('stringr')
 
+
+#####################################
+# 
+# SCRIPT LAYOUT
+#
+# 1. Read in general data such as populations. 
+# 2. Process the main data files used, such as SDOH. 
+# 3. Process the more granular data. This can take more specific processing and sometimes outputs longitudinal files as well as merging into the main files. 
+# 4. Rename, reorder, etc. 
+# 5. Output the main data and metadata files. Also output a file with state stats calculated throughout.
+# 6. Process granular files that don't get incorporated into the main file. 
+#
+#
+# NOTES
+#
+# Input files:
+#
+#
+#
+#
+# Output files:
+#
+#
+#
+#######################################
+
+
+
 counties = read.csv('raw_data/counties.csv')
+counties$State = "Texas"
+
+texas = read.csv('raw_data/texas.csv')
 
 ######################################
 # COUNTY POPULATIONS
@@ -50,7 +81,7 @@ sdoh_2020_variables = c(
   "ACS_PCT_ASIAN",
   "ACS_PCT_BLACK",
   "ACS_PCT_HISPANIC",
-  "ACS_PCT_WHITE",
+  "ACS_PCT_WHITE_NONHISP",
   "ACS_PCT_HH_NO_COMP_DEV",
   "ACS_PCT_HH_SMARTPHONE_ONLY",
   "ACS_PCT_HH_NO_INTERNET",
@@ -82,20 +113,9 @@ sdoh_2020_variables = c(
   "ACS_PCT_MEDICARE_ONLY",
   "ACS_PCT_OTHER_INS",
   "ACS_PCT_UNINSURED",
-  "AHRF_UNEMPLOYED_RATE",
-  "AHRF_PCT_GOOD_AQ",
-  "AHRF_TXC_SITE_NO_DATA",
-  "AHRF_TXC_SITE_CNTRL",
-  "AHRF_TXC_SITE_NO_CNTRL",
-  "AHRF_HPSA_DENTIST",
-  "AHRF_HPSA_MENTAL",
-  "AHRF_HPSA_PRIM",
-  "AHRF_DENTISTS_RATE",
+  "ACS_PCT_UNEMPLOY",
   "AHRF_NURSE_PRACT_RATE",
   "AHRF_PHYSICIAN_ASSIST_RATE",
-  "AMFAR_SSP_RATE",
-  "AMFAR_MEDSAFAC_RATE",
-  "AMFAR_AMATFAC_RATE",
   "AMFAR_MEDMHFAC_RATE",
   "AMFAR_MHFAC_RATE",
   "CDCW_INJURY_DTH_RATE",
@@ -109,8 +129,6 @@ sdoh_2020_variables = c(
   "NCHS_URCS_2013",
   "HIFLD_MEDIAN_DIST_UC",
   "HIFLD_UC_RATE",
-  "LTC_AVG_OBS_REHOSP_RATE",
-  "LTC_AVG_OBS_SUCCESSFUL_DISC_RATE",
   'LTC_OCCUPANCY_RATE',
   'LTC_PCT_FOR_PROFIT',
   'LTC_PCT_MULTI_FAC',
@@ -166,6 +184,46 @@ write.csv(county_populations, file="raw_data/county_populations_historical.csv",
 
 tmp_by = join_by('Name' == 'COUNTY')
 counties = left_join(counties, sdoh_latest, tmp_by )
+
+## CONVERT MEDICAL PRACTITIONERS TO per 100k
+
+counties$AHRF_NURSE_PRACT_RATE = counties$AHRF_NURSE_PRACT_RATE * 100
+counties$AHRF_PHYSICIAN_ASSIST_RATE = counties$AHRF_PHYSICIAN_ASSIST_RATE * 100
+
+## CONVERT FACILITIES to per 100k
+counties$HIFLD_UC_RATE = counties$HIFLD_UC_RATE * 100
+counties$POS_FQHC_RATE = counties$POS_FQHC_RATE * 100
+counties$POS_CMHC_RATE = counties$POS_CMHC_RATE * 100
+counties$POS_RHC_RATE = counties$POS_RHC_RATE * 100
+counties$POS_HHA_RATE = counties$POS_HHA_RATE * 100
+counties$POS_HOSPICE_RATE = counties$POS_HOSPICE_RATE * 100
+counties$POS_NF_RATE = counties$POS_NF_RATE * 100
+counties$POS_NF_BEDS_RATE = counties$POS_NF_BEDS_RATE * 100
+counties$POS_SNF_RATE = counties$POS_SNF_RATE * 100
+counties$POS_SNF_BEDS_RATE = counties$POS_SNF_BEDS_RATE * 100
+counties$AMFAR_MHFAC_RATE = counties$AMFAR_MHFAC_RATE * 100
+counties$AMFAR_MEDMHFAC_RATE = counties$AMFAR_MEDMHFAC_RATE * 100
+
+## CALCULATE DEATH RATES FOR THE STATE
+
+tmp_state_deaths_injury_actual = (counties$ACS_TOT_POP_WT / 100000) * counties$CDCW_INJURY_DTH_RATE
+tmp_state_deaths_transport_actual = (counties$ACS_TOT_POP_WT / 100000) * counties$CDCW_TRANSPORT_DTH_RATE
+tmp_state_deaths_self_harm_actual = (counties$ACS_TOT_POP_WT / 100000) * counties$CDCW_SELFHARM_DTH_RATE
+tmp_state_deaths_assault_actual = (counties$ACS_TOT_POP_WT / 100000) * counties$CDCW_ASSAULT_DTH_RATE
+tmp_state_deaths_maternal_actual = (counties$ACS_TOT_POP_WT / 100000) * counties$CDCW_MATERNAL_DTH_RATE
+
+
+texas$Deaths.from.Injury.per.100k = sum(tmp_state_deaths_injury_actual[!is.na(tmp_state_deaths_injury_actual)], na.rm = TRUE) / sum(counties[!is.na(counties$CDCW_INJURY_DTH_RATE),]$ACS_TOT_POP_WT, na.rm = TRUE) * 100000
+
+texas$Deaths.from.Transport.Accident.per.100k = sum(tmp_state_deaths_transport_actual[!is.na(tmp_state_deaths_transport_actual)], na.rm = TRUE) / sum(counties[!is.na(counties$CDCW_TRANSPORT_DTH_RATE),]$ACS_TOT_POP_WT, na.rm = TRUE) * 100000
+
+texas$Deaths.from.Suicide.per.100k = sum(tmp_state_deaths_self_harm_actual[!is.na(tmp_state_deaths_self_harm_actual)], na.rm = TRUE) / sum(counties[!is.na(counties$CDCW_SELFHARM_DTH_RATE),]$ACS_TOT_POP_WT, na.rm = TRUE) * 100000
+
+texas$Deaths.from.Assault.per.100k = sum(tmp_state_deaths_assault_actual[!is.na(tmp_state_deaths_assault_actual)], na.rm = TRUE) / sum(counties[!is.na(counties$CDCW_ASSAULT_DTH_RATE),]$ACS_TOT_POP_WT, na.rm = TRUE) * 100000
+
+texas$Maternal.Deaths.per.100k = sum(tmp_state_deaths_maternal_actual[!is.na(tmp_state_deaths_maternal_actual)], na.rm = TRUE) / sum(counties[!is.na(counties$CDCW_MATERNAL_DTH_RATE),]$ACS_TOT_POP_WT, na.rm = TRUE) * 100000
+
+
 
 # Clean up
 counties = counties %>% select(
@@ -265,11 +323,54 @@ sdoh_2020_metadata[str_detect(sdoh_2020_metadata$name, "^POS_"),]$notes = sdoh_s
 # Create var for all metadata
 counties_metadata = sdoh_2020_metadata
 
+# Fix the medical practitioner and facilities rates.
+
+counties_metadata = counties_metadata %>% mutate(
+  label = ifelse(
+    name %in% c("AHRF_NURSE_PRACT_RATE","AHRF_PHYSICIAN_ASSIST_RATE","HIFLD_UC_RATE", "POS_FQHC_RATE", "POS_CMHC_RATE", "POS_RHC_RATE", "POS_HHA_RATE", "POS_HOSPICE_RATE", "POS_NF_RATE", "POS_NF_BEDS_RATE", "POS_SNF_RATE", "POS_SNF_BEDS_RATE","AMFAR_MEDMHFAC_RATE","AMFAR_MHFAC_RATE"), 
+    str_replace(label,"per 1,000", "per 100k"), 
+    label
+  )
+)
+
 # Delete vars
 rm(list = ls(, pattern = "sdoh_"))
 rm(list = ls(, pattern = "tmp_"))
 
 
+
+
+
+
+
+######################################
+# ECONOMIC REGIONS
+#
+#######################################
+
+county_economic_regions = read_csv(
+  'raw_data/county_economic_regions.csv'
+)
+
+tmp_by = join_by('Name' == 'County')
+counties = left_join(counties, county_economic_regions, tmp_by )
+
+# Metadata
+
+tmp_metadata = c(
+  "Economic.Region",
+  "Economic region, as classified by the Texas Comptroller",
+  "",
+  "https://comptroller.texas.gov/economy/economic-data/regions",
+  "",
+  ""
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# Delete vars
+rm(list = ls(, pattern = "county_economic"))
+rm(list = ls(, pattern = "tmp_"))
 
 
 
@@ -284,6 +385,8 @@ rm(list = ls(, pattern = "tmp_"))
 # https://www.cdc.gov/places/social-determinants-of-health-and-places-data/index.html
 #
 # Update annually. Keep an eye on variable changes over time.
+#
+# To get state data, pull from here: https://www.cdc.gov/brfss/brfssprevalence/index.html
 #
 #######################################
 
@@ -311,8 +414,8 @@ counties$BRFSS_OBESITY_RATE = cdc_obsesity_prevalence$Data_Value
 tmp_metadata = c(
   "BRFSS_OBESITY_RATE",
   "Obesity rate among adults aged >=18 years",
-  "Centers for Disease Control and Prevention Behavioral Risk Factor Surveillance System",
-  "https://www.cdc.gov/brfss/index.html",
+  "Centers for Disease Control and Prevention",
+  "https://www.cdc.gov/places/",
   "Included data were obtained from PLACES, a collaboration between the CDC, the Robert Wood Johnson Foundation, and the CDC Foundation.",
   2020
 )
@@ -337,8 +440,8 @@ counties$BRFSS_BINGE_DRINKING_RATE = cdc_drinking_prevalence$Data_Value
 tmp_metadata = c(
   "BRFSS_BINGE_DRINKING_RATE",
   "Binge drinking rate among adults aged >=18 years",
-  "Centers for Disease Control and Prevention Behavioral Risk Factor Surveillance System",
-  "https://www.cdc.gov/brfss/index.html",
+  "Centers for Disease Control and Prevention",
+  "https://www.cdc.gov/places/",
   "Included data were obtained from PLACES, a collaboration between the CDC, the Robert Wood Johnson Foundation, and the CDC Foundation. The CDC defines binge drinking as consuming 5 or more drinks on an occasion for men or 4 or more drinks on an occasion for women.",
   2020
 )
@@ -358,13 +461,13 @@ cdc_smoking_prevalence = cdc_places_2022 %>% filter(
   LocationName
 )
 
-counties$BRFSS_SMOKING_RATE = cdc_smoking_prevalence
+counties$BRFSS_SMOKING_RATE = cdc_smoking_prevalence$Data_Value
 
 tmp_metadata = c(
   "BRFSS_SMOKING_RATE",
   "Current smoking rate among adults aged >=18 years",
-  "Centers for Disease Control and Prevention Behavioral Risk Factor Surveillance System",
-  "https://www.cdc.gov/brfss/index.html",
+  "Centers for Disease Control and Prevention",
+  "https://www.cdc.gov/places/",
   "Included data were obtained from PLACES, a collaboration between the CDC, the Robert Wood Johnson Foundation, and the CDC Foundation.",
   2020
 )
@@ -384,13 +487,13 @@ cdc_depression_prevalence = cdc_places_2022 %>% filter(
   LocationName
 )
 
-counties$BRFSS_DEPRESSION_RATE = cdc_depression_prevalence
+counties$BRFSS_DEPRESSION_RATE = cdc_depression_prevalence$Data_Value
 
 tmp_metadata = c(
   "BRFSS_DEPRESSION_RATE",
   "Depression rate among adults aged >=18 years",
-  "Centers for Disease Control and Prevention Behavioral Risk Factor Surveillance System",
-  "https://www.cdc.gov/brfss/index.html",
+  "Centers for Disease Control and Prevention",
+  "https://www.cdc.gov/places/",
   "Included data were obtained from PLACES, a collaboration between the CDC, the Robert Wood Johnson Foundation, and the CDC Foundation.",
   2020
 )
@@ -410,13 +513,13 @@ cdc_diabetes_prevalence = cdc_places_2022 %>% filter(
   LocationName
 )
 
-counties$BRFSS_DIABETES_RATE = cdc_diabetes_prevalence
+counties$BRFSS_DIABETES_RATE = cdc_diabetes_prevalence$Data_Value
 
 tmp_metadata = c(
   "BRFSS_DIABETES_RATE",
   "Diagnosed diabetes rate among adults aged >=18 years",
-  "Centers for Disease Control and Prevention Behavioral Risk Factor Surveillance System",
-  "https://www.cdc.gov/brfss/index.html",
+  "Centers for Disease Control and Prevention",
+  "https://www.cdc.gov/places/",
   "Included data were obtained from PLACES, a collaboration between the CDC, the Robert Wood Johnson Foundation, and the CDC Foundation.",
   2020
 )
@@ -469,11 +572,11 @@ cdc_atsdr_housing = cdc_atsdr_2020 %>% select(
   RPL_THEME4
 )
 
-counties$CDC_ATSDR_SOC_VUL_OVERALL = cdc_atsdr_overall
-counties$CDC_ATSDR_SOC_VUL_SOCIOECONOMIC = cdc_atsdr_socioeconomic
-counties$CDC_ATSDR_SOC_VUL_HOUSEHOLD = cdc_atsdr_household
-counties$CDC_ATSDR_SOC_VUL_RACE_ETHNICITY = cdc_atsdr_racial
-counties$CDC_ATSDR_SOC_VUL_HOUSING_TRANSPORT = cdc_atsdr_housing
+counties$CDC_ATSDR_SOC_VUL_OVERALL = cdc_atsdr_overall$RPL_THEMES
+counties$CDC_ATSDR_SOC_VUL_SOCIOECONOMIC = cdc_atsdr_socioeconomic$RPL_THEME1
+counties$CDC_ATSDR_SOC_VUL_HOUSEHOLD = cdc_atsdr_household$RPL_THEME2
+counties$CDC_ATSDR_SOC_VUL_RACE_ETHNICITY = cdc_atsdr_racial$RPL_THEME3
+counties$CDC_ATSDR_SOC_VUL_HOUSING_TRANSPORT = cdc_atsdr_housing$RPL_THEME4
 
 tmp_note = "The CDC/ATSDR Social Vulnerability Index ranks counties' social vulnerability along four dimensions: socioeconomic status, household characteristics, racial and ethnic minority status and housing type and transportation. An overall ranking combines these dimensions. Rankings are relative to all U.S. counties, and higher numbers indicate greater vulnerability. According to the CDC/ATSDR, social Vulnerability refers to the resilience of communities (the ability to survive and thrive) when confronted by external stresses on human health, stresses such as natural or human-caused disasters, or disease outbreaks."
 
@@ -549,6 +652,151 @@ rm(list = ls(, pattern = "tmp"))
 
 
 
+######################################
+# HRSA Shortages
+#
+# Gets downloaded manually every year from:
+# https://data.hrsa.gov/tools/shortage-area/hpsa-find
+#
+# State: Texas
+# Choose HPSA discipline
+# Status: Designated and Proposed for Withdrawal
+# HPSA Designation/Population Types: Geographic HPSA
+#
+# NOTE: These get updated irregularly, so we just get whatever is most recent. 
+# It's best to just scrape the table and then delete the Expand column.
+#
+#######################################
+
+hrsa_mental_health_shortages = read_csv('raw_data/hrsa/hrsa_mental_health_shortages.csv')
+
+# Get the latest update year from the metadata
+last_year = str_c(
+  "20",
+  max(
+    as.numeric(
+      str_sub(hrsa_mental_health_shortages$`Update Date`,-2,-1)
+    )
+  )
+)
+
+hrsa_mental_health_shortages = hrsa_mental_health_shortages %>% select(
+  `HPSA Name`,
+  `HPSA FTE Short`,
+  `HPSA Score`
+)
+
+hrsa_mental_health_shortages$`HPSA Name` = str_replace(
+  hrsa_mental_health_shortages$`HPSA Name`,
+  " County",
+  ""
+)
+
+hrsa_mental_health_shortages = hrsa_mental_health_shortages %>% rename(
+  'HPSA.Mental.FTE.Short' = `HPSA FTE Short`,
+  'HPSA.Mental.Score' = `HPSA Score`
+)
+
+tmp_by = join_by('Name' == 'HPSA Name')
+counties = left_join(counties, hrsa_mental_health_shortages, tmp_by )
+
+# Metadata
+
+tmp_metadata = c(
+  "HPSA.Mental.FTE.Short",
+  "The number of full-time equivalent (FTE) mental health practitioners needed to achieve the population to practitioner target ratio set by the Health Resources & Services Administration.",
+  "US Health Resources & Services Administration",
+  "https://data.hrsa.gov/tools/shortage-area/hpsa-find",
+  "Health Professional Shortage Areas are evaluated periodically. The year given here indicates the most recent evaluation.",
+  last_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+
+tmp_metadata = c(
+  "HPSA.Mental.Score",
+  "Health Professional Shortage Area Score developed by the National Health Service Corps (NHSC) in determining priorities for assignment of clinicians. The scores range from 0 to 26 where the higher the score, the greater the priority.",
+  "US Health Resources & Services Administration",
+  "https://data.hrsa.gov/tools/shortage-area/hpsa-find",
+  "Health Professional Shortage Areas are evaluated periodically. The year given here indicates the most recent evaluation.",
+  last_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# Delete vars
+rm(list = ls(, pattern = "hrsa_"))
+rm(list = ls(, pattern = "tmp"))
+
+# Primary Care
+
+hrsa_primary_care_health_shortages = read_csv('raw_data/hrsa/hrsa_primary_care_health_shortages.csv')
+
+# Get the latest update year from the metadata
+last_year = str_c(
+  "20",
+  max(
+    as.numeric(
+      str_sub(hrsa_primary_care_health_shortages$`Update Date`,-2,-1)
+    )
+  )
+)
+
+hrsa_primary_care_health_shortages = hrsa_primary_care_health_shortages %>% select(
+  `HPSA Name`,
+  `HPSA FTE Short`,
+  `HPSA Score`
+)
+
+hrsa_primary_care_health_shortages$`HPSA Name` = str_replace(
+  hrsa_primary_care_health_shortages$`HPSA Name`,
+  " County",
+  ""
+)
+
+hrsa_primary_care_health_shortages = hrsa_primary_care_health_shortages %>% rename(
+  'HPSA.Primary.Care.FTE.Short' = `HPSA FTE Short`,
+  'HPSA.Primary.Care.Score' = `HPSA Score`
+)
+
+tmp_by = join_by('Name' == 'HPSA Name')
+counties = left_join(counties, hrsa_primary_care_health_shortages, tmp_by )
+
+# Metadata
+
+tmp_metadata = c(
+  "HPSA.Primary.Care.FTE.Short",
+  "The number of full-time equivalent (FTE) primary_care health practitioners needed to achieve the population to practitioner target ratio set by the Health Resources & Services Administration.",
+  "US Health Resources & Services Administration",
+  "https://data.hrsa.gov/tools/shortage-area/hpsa-find",
+  "Health Professional Shortage Areas are evaluated periodically. The year given here indicates the most recent evaluation.",
+  last_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+
+tmp_metadata = c(
+  "HPSA.Primary.Care.Score",
+  "Health Professional Shortage Area Score developed by the National Health Service Corps (NHSC) in determining priorities for assignment of clinicians. The scores range from 0 to 26 where the higher the score, the greater the priority.",
+  "US Health Resources & Services Administration",
+  "https://data.hrsa.gov/tools/shortage-area/hpsa-find",
+  "Health Professional Shortage Areas are evaluated periodically. The year given here indicates the most recent evaluation.",
+  last_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# Delete vars
+rm(list = ls(, pattern = "hrsa_"))
+rm(list = ls(, pattern = "tmp"))
+
+
+
+
+
+
 
 ######################################
 # BIRTH DEFECTS
@@ -606,7 +854,7 @@ counties_metadata = rbind(counties_metadata, tmp_metadata)
 
 
 
-# Make logitudinal and save
+# Make longitudinal and save
 tdshs_birth_defects_longitudinal = pivot_wider(
                               tdshs_birth_defects,
                               names_from = YearText,
@@ -615,7 +863,7 @@ tdshs_birth_defects_longitudinal = pivot_wider(
 
 write.csv(
   tdshs_birth_defects_longitudinal, 
-  file = 'output/data/tdshs_birth_defects_logitudinal.csv', 
+  file = 'output/data/tdshs_birth_defects_longitudinal.csv', 
   row.names = FALSE
 )
 
@@ -655,68 +903,68 @@ rm(list = ls(, pattern = "tmp"))
 # Processing requires a merge with population file.
 #
 #######################################
-
-census_cbp_alc_est_2020 = read_csv('raw_data/census/census_cbp_alc_est_2020.csv')
-
-# !!! MANUAL UPDATE FOR POPULATION PULL !!! #
-tmp_year = 2020
-
-# Format fips
-census_cbp_alc_est_2020$fipscty = str_pad(
-  census_cbp_alc_est_2020$fipscty,
-  3,
-  pad = "0"
-)
-
-census_cbp_alc_est_2020$fips = str_c(
-  census_cbp_alc_est_2020$fipstate,
-  census_cbp_alc_est_2020$fipscty,
-  sep=""
-)
-
-census_cbp_alc_est_2020 = census_cbp_alc_est_2020 %>% select(
-  fips,
-  est
-)
-
-census_cbp_alc_est_2020$fips = as.numeric(census_cbp_alc_est_2020$fips)
-
-# Merge county name in order to merge population
-
-tmp_by = join_by('fips' == 'fips')
-census_cbp_alc_est_2020 = left_join(census_cbp_alc_est_2020, counties[,c('Name','fips')], tmp_by )
-
-
-tmp_by = join_by('Name' == 'County')
-census_cbp_alc_est_2020 = left_join(census_cbp_alc_est_2020, county_populations[,c('County',str_c('X.',tmp_year,collapse=""))], tmp_by )
-
-census_cbp_alc_est_2020$Alc.Establisments.per.100k = census_cbp_alc_est_2020$est / census_cbp_alc_est_2020$X.2020 * 100000
-
-census_cbp_alc_est_2020 = census_cbp_alc_est_2020 %>% select(
-  fips,
-  Alc.Establisments.per.100k
-)
-
-tmp_by = join_by('fips' == 'fips')
-counties = left_join(counties, census_cbp_alc_est_2020, tmp_by )
-
-# Metadata
-
-tmp_metadata = c(
-  "Alc.Establisments.per.100k",
-  "Number of primarily alcohol-serving establishments per 100,000 population",
-  "U.S. Census County Business Patterns",
-  "https://www.census.gov/programs-surveys/cbp.html",
-  "",
-  2020
-)
-
-counties_metadata = rbind(counties_metadata, tmp_metadata)
-
-# Delete vars
-rm(list = ls(, pattern = "census_"))
-rm(list = ls(, pattern = "tmp"))
-
+# 
+# census_cbp_alc_est_2020 = read_csv('raw_data/census/census_cbp_alc_est_2020.csv')
+# 
+# # !!! MANUAL UPDATE FOR POPULATION PULL !!! #
+# tmp_year = 2020
+# 
+# # Format fips
+# census_cbp_alc_est_2020$fipscty = str_pad(
+#   census_cbp_alc_est_2020$fipscty,
+#   3,
+#   pad = "0"
+# )
+# 
+# census_cbp_alc_est_2020$fips = str_c(
+#   census_cbp_alc_est_2020$fipstate,
+#   census_cbp_alc_est_2020$fipscty,
+#   sep=""
+# )
+# 
+# census_cbp_alc_est_2020 = census_cbp_alc_est_2020 %>% select(
+#   fips,
+#   est
+# )
+# 
+# census_cbp_alc_est_2020$fips = as.numeric(census_cbp_alc_est_2020$fips)
+# 
+# # Merge county name in order to merge population
+# 
+# tmp_by = join_by('fips' == 'fips')
+# census_cbp_alc_est_2020 = left_join(census_cbp_alc_est_2020, counties[,c('Name','fips')], tmp_by )
+# 
+# 
+# tmp_by = join_by('Name' == 'County')
+# census_cbp_alc_est_2020 = left_join(census_cbp_alc_est_2020, county_populations[,c('County',str_c('X.',tmp_year,collapse=""))], tmp_by )
+# 
+# census_cbp_alc_est_2020$Alc.Establisments.per.100k = census_cbp_alc_est_2020$est / census_cbp_alc_est_2020$X.2020 * 100000
+# 
+# census_cbp_alc_est_2020 = census_cbp_alc_est_2020 %>% select(
+#   fips,
+#   Alc.Establisments.per.100k
+# )
+# 
+# tmp_by = join_by('fips' == 'fips')
+# counties = left_join(counties, census_cbp_alc_est_2020, tmp_by )
+# 
+# # Metadata
+# 
+# tmp_metadata = c(
+#   "Alc.Establisments.per.100k",
+#   "Number of primarily alcohol-serving establishments per 100,000 population",
+#   "U.S. Census County Business Patterns",
+#   "https://www.census.gov/programs-surveys/cbp.html",
+#   "",
+#   2020
+# )
+# 
+# counties_metadata = rbind(counties_metadata, tmp_metadata)
+# 
+# # Delete vars
+# rm(list = ls(, pattern = "census_"))
+# rm(list = ls(, pattern = "tmp"))
+# 
 
 
 
@@ -728,85 +976,85 @@ rm(list = ls(, pattern = "tmp"))
 
 
 ######################################      
-# TRAFFIC FATALITIES PER 100k
+# TRAFFIC FATALITIES PER 100k - DROPPED on 5/5/2023 in favor of using CDC WONDER data here.
 #
 # Gets downloaded manually every year(?) from:
 # https://cdan.dot.gov/query
 #
 # Filter for state. Rows: State and County | Columns: BAC: Highest Driver BAC
 # Easier to use an extention to save the HTML table instead of downloading.
-# Delete first row of data.
+# Delete first row of data in Excel.
 #
 # !! MANUAL UPDATE !!
 # Processing requires a merge with population file.
 #
 #######################################
-
-nhtsa_traffic_fatalities_2020 = read.csv('raw_data/nhtsa/nhtsa_traffic_fatalities_2020.csv')
-
-nhtsa_traffic_fatalities_2020$State.County = str_replace(
-  nhtsa_traffic_fatalities_2020$State.County,
-  "Texas - ",
-  "")
-
-# Remove first row
-nhtsa_traffic_fatalities_2020 = nhtsa_traffic_fatalities_2020[-1,]
-
-tmp_by = join_by('State.County' == 'County')
-nhtsa_traffic_fatalities_2020 = left_join(nhtsa_traffic_fatalities_2020, county_populations[,c('County', 'X.2020')], tmp_by )
-
-nhtsa_traffic_fatalities_2020$Total = as.numeric(nhtsa_traffic_fatalities_2020$Total)
-nhtsa_traffic_fatalities_2020$BAC..08..g.dL = as.numeric(nhtsa_traffic_fatalities_2020$BAC..08..g.dL)
-
-# Calculate rates per 100k population
-nhtsa_traffic_fatalities_2020$rate_all = nhtsa_traffic_fatalities_2020$Total / nhtsa_traffic_fatalities_2020$X.2020 * 100000
-
-nhtsa_traffic_fatalities_2020$rate_bac_08 = nhtsa_traffic_fatalities_2020$BAC..08..g.dL / nhtsa_traffic_fatalities_2020$X.2020 * 100000
-
-nhtsa_traffic_fatalities_2020 = nhtsa_traffic_fatalities_2020 %>% select(
-  State.County,
-  rate_all,
-  rate_bac_08
-)
-
-colnames(nhtsa_traffic_fatalities_2020) = c(
-  'County',
-  'NHTSA_TRAFF_FATALITIES_RATE',
-  'NHTSA_TRAFF_FATALITIES_BAC_08_RATE'
-)
-
-tmp_by = join_by('Name' == 'County')
-counties = left_join(counties, nhtsa_traffic_fatalities_2020, tmp_by )
-
-
-# Metadata
-
-tmp_metadata = c(
-  "NHTSA_TRAFF_FATALITIES_RATE",
-  "Rate of traffic fatalities per 100,000 population",
-  "National Highway Traffic Safety Administration",
-  "https://cdan.dot.gov/query",
-  "",
-  2020
-)
-
-counties_metadata = rbind(counties_metadata, tmp_metadata)
-
-tmp_metadata = c(
-  "NHTSA_TRAFF_FATALITIES_BAC_08_RATE",
-  "Rate of traffic fatalities involving a driver with BAC > 0.8 per 100,000 population",
-  "National Highway Traffic Safety Administration",
-  "https://cdan.dot.gov/query",
-  "",
-  2020
-)
-
-counties_metadata = rbind(counties_metadata, tmp_metadata)
-
-# Delete vars
-rm(list = ls(, pattern = "nhtsa_"))
-rm(list = ls(, pattern = "tmp"))
-
+# 
+# nhtsa_traffic_fatalities_2020 = read.csv('raw_data/nhtsa/nhtsa_traffic_fatalities_2020.csv')
+# 
+# nhtsa_traffic_fatalities_2020$State.County = str_replace(
+#   nhtsa_traffic_fatalities_2020$State.County,
+#   "Texas - ",
+#   "")
+# 
+# # Remove first row
+# nhtsa_traffic_fatalities_2020 = nhtsa_traffic_fatalities_2020[-1,]
+# 
+# tmp_by = join_by('State.County' == 'County')
+# nhtsa_traffic_fatalities_2020 = left_join(nhtsa_traffic_fatalities_2020, county_populations[,c('County', 'X.2020')], tmp_by )
+# 
+# nhtsa_traffic_fatalities_2020$Total = as.numeric(nhtsa_traffic_fatalities_2020$Total)
+# nhtsa_traffic_fatalities_2020$BAC..08..g.dL = as.numeric(nhtsa_traffic_fatalities_2020$BAC..08..g.dL)
+# 
+# # Calculate rates per 100k population
+# nhtsa_traffic_fatalities_2020$rate_all = nhtsa_traffic_fatalities_2020$Total / nhtsa_traffic_fatalities_2020$X.2020 * 100000
+# 
+# nhtsa_traffic_fatalities_2020$rate_bac_08 = nhtsa_traffic_fatalities_2020$BAC..08..g.dL / nhtsa_traffic_fatalities_2020$X.2020 * 100000
+# 
+# nhtsa_traffic_fatalities_2020 = nhtsa_traffic_fatalities_2020 %>% select(
+#   State.County,
+#   rate_all,
+#   rate_bac_08
+# )
+# 
+# colnames(nhtsa_traffic_fatalities_2020) = c(
+#   'County',
+#   'NHTSA_TRAFF_FATALITIES_RATE',
+#   'NHTSA_TRAFF_FATALITIES_BAC_08_RATE'
+# )
+# 
+# tmp_by = join_by('Name' == 'County')
+# counties = left_join(counties, nhtsa_traffic_fatalities_2020, tmp_by )
+# 
+# 
+# # Metadata
+# 
+# tmp_metadata = c(
+#   "NHTSA_TRAFF_FATALITIES_RATE",
+#   "Rate of traffic fatalities per 100,000 population",
+#   "National Highway Traffic Safety Administration",
+#   "https://cdan.dot.gov/query",
+#   "",
+#   2020
+# )
+# 
+# counties_metadata = rbind(counties_metadata, tmp_metadata)
+# 
+# tmp_metadata = c(
+#   "NHTSA_TRAFF_FATALITIES_BAC_08_RATE",
+#   "Rate of traffic fatalities involving a driver with BAC > 0.8 per 100,000 population",
+#   "National Highway Traffic Safety Administration",
+#   "https://cdan.dot.gov/query",
+#   "",
+#   2020
+# )
+# 
+# counties_metadata = rbind(counties_metadata, tmp_metadata)
+# 
+# # Delete vars
+# rm(list = ls(, pattern = "nhtsa_"))
+# rm(list = ls(, pattern = "tmp"))
+# 
 
 
 
@@ -846,7 +1094,7 @@ counties = left_join(counties, cdc_opioid_dispensing_rates_2020, tmp_by )
 
 tmp_metadata = c(
   "Opioid.Dispensing.Rate.per.100",
-  "Rate of traffic fatalities involving a driver with BAC > 0.8 per 100,000 population",
+  "Number of opioid prescriptions per 100 population",
   "Centers for Disease Control",
   "https://www.cdc.gov/drugoverdose/rxrate-maps/index.html",
   "In this context, the CDC defines a prescription as a new or refill prescription dispensed at a retail pharmacy in the sample and paid for by commercial insurance, Medicaid, Medicare, cash or its equivalent, and other third-party coverage. Mail order prescriptions are not included.",
@@ -874,76 +1122,108 @@ rm(list = ls(, pattern = "tmp"))
 # Gets downloaded manually every year(?) from:
 # https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions
 #
+# As of 2023 this data seems to be here: https://healthdata.dshs.texas.gov/dashboard/health-care-workforce/hprc/health-profession-supply -- data format seems to be the same
+#
 # Save HTML tables. 
 #
 #######################################
 
-tdshs_professions_lbsw = read_csv('raw_data/tdshs/tdshs_professions_lbsw_2020.csv')
-tdshs_professions_lcdc = read_csv('raw_data/tdshs/tdshs_professions_lcdc_2020.csv')
-tdshs_professions_lcsw = read_csv('raw_data/tdshs/tdshs_professions_lcsw_2020.csv')
-tdshs_professions_lmsw = read_csv('raw_data/tdshs/tdshs_professions_lmsw_2020.csv')
-tdshs_professions_lpc = read_csv('raw_data/tdshs/tdshs_professions_lpc_2020.csv')
-tdshs_professions_pcp = read_csv('raw_data/tdshs/tdshs_professions_pcp_2020.csv')
+#tdshs_professions_lbsw = read_csv('raw_data/tdshs/tdshs_professions_lbsw_2020.csv')
+tdshs_professions_lcdc = read_csv('raw_data/tdshs/tdshs_professions_lcdc_2022.csv')
+tdshs_professions_lcsw = read_csv('raw_data/tdshs/tdshs_professions_lcsw_2022.csv')
+# tdshs_professions_lmsw = read_csv('raw_data/tdshs/tdshs_professions_lmsw_2020.csv')
+tdshs_professions_lpc = read_csv('raw_data/tdshs/tdshs_professions_lpc_2022.csv')
+tdshs_professions_pcp = read_csv('raw_data/tdshs/tdshs_professions_pcp_2022.csv')
+tdshs_professions_dentist = read_csv('raw_data/tdshs/tdshs_professions_dentists_2022.csv')
+tdshs_professions_psychiatrist = read_csv('raw_data/tdshs/tdshs_professions_psychiatrists_2022.csv')
 
-tdshs_professions_lbsw = tdshs_professions_lbsw %>% select(
-  c(1,5)
-) %>% rename(
-  "LBSWs.per.100k" = "Ratio of LBSWs to 100,000 Population"
+
+# Calculate state rates
+tdshs_state_lcdc_per_100k = sum(tdshs_professions_lcdc$`PROFESSION COUNT`) / sum(tdshs_professions_lcdc$POPULATION) * 100000
+tdshs_state_lcsw_per_100k = sum(tdshs_professions_lcsw$`PROFESSION COUNT`) / sum(tdshs_professions_lcsw$POPULATION) * 100000
+tdshs_state_lpc_per_100k = sum(tdshs_professions_lpc$`PROFESSION COUNT`) / sum(tdshs_professions_lpc$POPULATION) * 100000
+tdshs_state_pcp_per_100k = sum(tdshs_professions_pcp$`PROFESSION COUNT`) / sum(tdshs_professions_pcp$POPULATION) * 100000
+tdshs_state_dentists_per_100k = sum(tdshs_professions_dentist$`PROFESSION COUNT`) / sum(tdshs_professions_dentist$POPULATION) * 100000
+tdshs_state_psychiatrists_per_100k = sum(tdshs_professions_psychiatrist$`PROFESSION COUNT`) / sum(tdshs_professions_psychiatrist$POPULATION) * 100000
+
+
+texas = texas %>% mutate(
+  'LCDCs.per.100k' = tdshs_state_lcdc_per_100k,
+  'LCSWs.per.100k' = tdshs_state_lcsw_per_100k,
+  'LPCs.per.100k' = tdshs_state_lpc_per_100k,
+  'PCPs.per.100k' = tdshs_state_pcp_per_100k,
+  'Dentists.per.100k' = tdshs_state_dentists_per_100k,
+  'Psychiatrists.per.100k' = tdshs_state_psychiatrists_per_100k
 )
 
 tdshs_professions_lcdc = tdshs_professions_lcdc %>% select(
-  c(1,5)
+  c(1,6)
 ) %>% rename(
-  "LCDCs.per.100k" = "Ratio of LCDCs to 100,000 Population"
+  "LCDCs.per.100k" = "RATIO 100K POPULATION TO PROFESSION"
+) %>% mutate(
+  COUNTY = str_to_title(COUNTY)
 )
 
 tdshs_professions_lcsw = tdshs_professions_lcsw %>% select(
-  c(1,5)
+  c(1,6)
 ) %>% rename(
-  "LCSWs.per.100k" = "Ratio of LCSWs to 100,000 Population"
-)
-
-tdshs_professions_lmsw = tdshs_professions_lmsw %>% select(
-  c(1,5)
-) %>% rename(
-  "LMSWs.per.100k" = "Ratio of LMSWs to 100,000 Population"
+  "LCSWs.per.100k" = "RATIO 100K POPULATION TO PROFESSION"
+) %>% mutate(
+  COUNTY = str_to_title(COUNTY)
 )
 
 tdshs_professions_lpc = tdshs_professions_lpc %>% select(
-  c(1,5)
+  c(1,6)
 ) %>% rename(
-  "LPCs.per.100k" = "Ratio of LPCs to 100,000 Population"
+  "LPCs.per.100k" = "RATIO 100K POPULATION TO PROFESSION"
+) %>% mutate(
+  COUNTY = str_to_title(COUNTY)
 )
 
 tdshs_professions_pcp = tdshs_professions_pcp %>% select(
-  c(1,5)
+  c(1,6)
 ) %>% rename(
-  "PCPs.per.100k" = "Ratio of Primary Care Physicians to 100,000 Population"
+  "PCPs.per.100k" = "RATIO 100K POPULATION TO PROFESSION"
+) %>% mutate(
+  COUNTY = str_to_title(COUNTY)
 )
 
-tmp_by = join_by('Name' == 'County')
+tdshs_professions_dentist = tdshs_professions_dentist %>% select(
+  c(1,6)
+) %>% rename(
+  "Dentists.per.100k" = "RATIO 100K POPULATION TO PROFESSION"
+) %>% mutate(
+  COUNTY = str_to_title(COUNTY)
+)
+
+tdshs_professions_psychiatrist = tdshs_professions_psychiatrist %>% select(
+  c(1,6)
+) %>% rename(
+  "Psychiatrists.per.100k" = "RATIO 100K POPULATION TO PROFESSION"
+) %>% mutate(
+  COUNTY = str_to_title(COUNTY)
+)
+
+tmp_by = join_by('Name' == 'COUNTY', )
 counties = left_join(counties, tdshs_professions_pcp, tmp_by )
 
-tmp_by = join_by('Name' == 'County')
 counties = left_join(counties, tdshs_professions_lcdc, tmp_by )
 
-tmp_by = join_by('Name' == 'County')
 counties = left_join(counties, tdshs_professions_lpc, tmp_by )
 
-tmp_by = join_by('Name' == 'County')
 counties = left_join(counties, tdshs_professions_lcsw, tmp_by )
 
-tmp_by = join_by('Name' == 'County')
-counties = left_join(counties, tdshs_professions_lbsw, tmp_by )
+counties = left_join(counties, tdshs_professions_dentist, tmp_by )
 
-tmp_by = join_by('Name' == 'County')
-counties = left_join(counties, tdshs_professions_lmsw, tmp_by )
+counties = left_join(counties, tdshs_professions_psychiatrist, tmp_by )
+
+
 
 # Metadata
 
 tmp_source = "Texas Department of State Health Services"
-tmp_link = "https://www.dshs.texas.gov/health-professions-resource-center-hprc/health-professions"
-tmp_year = 2020
+tmp_link = "https://healthdata.dshs.texas.gov/dashboard/health-care-workforce/hprc/health-profession-supply"
+tmp_year = 2022
 
 tmp_metadata = c(
   "PCPs.per.100k",
@@ -998,8 +1278,8 @@ counties_metadata = rbind(counties_metadata, tmp_metadata)
 # *** #
 
 tmp_metadata = c(
-  "LBSWs.per.100k",
-  "Licensed bachelor-level social workers per 100,000 people.",
+  "Dentists.per.100k",
+  "Dentists per 100,000 people.",
   tmp_source,
   tmp_link,
   "",
@@ -1011,8 +1291,8 @@ counties_metadata = rbind(counties_metadata, tmp_metadata)
 # *** #
 
 tmp_metadata = c(
-  "LMSWs.per.100k",
-  "Licensed masters-level social workers per 100,000 people.",
+  "Psychiatrists.per.100k",
+  "Psychiatrists per 100,000 people.",
   tmp_source,
   tmp_link,
   "",
@@ -1027,22 +1307,332 @@ rm(list = ls(, pattern = "tmp"))
 
 
 
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
 
 
 
 
 
 
+
+######################################      
+# DRUG DEATHS
+#
+# Gets requested every year(?) from:
+# DSHS Center for Health Statistics – Vital Events Data Management - vstat@dshs.texas.gov
+#
+# Save HTML tables. 
+#
+# !!! MANUAL UPDATE!!!
+# Replace years below when changing column names and calculating rates.
+#
+#######################################
+  
+tdshs_drug_deaths_benzodiazepines = read_csv('raw_data/tdshs/tdshs_drug_deaths_benzodiazepines_2015_2020.csv')
+tdshs_drug_deaths_cannabis = read_csv('raw_data/tdshs/tdshs_drug_deaths_cannabis_2015_2020.csv')
+tdshs_drug_deaths_cocaine = read_csv('raw_data/tdshs/tdshs_drug_deaths_cocaine_2015_2020.csv')
+tdshs_drug_deaths_heroin = read_csv('raw_data/tdshs/tdshs_drug_deaths_heroin_2015_2020.csv')
+tdshs_drug_deaths_methadone = read_csv('raw_data/tdshs/tdshs_drug_deaths_methadone_2015_2020.csv')
+tdshs_drug_deaths_opioids = read_csv('raw_data/tdshs/tdshs_drug_deaths_opioids_2015_2020.csv')
+tdshs_drug_deaths_other_narcotics = read_csv('raw_data/tdshs/tdshs_drug_deaths_other_narcotics_2015_2020.csv')
+tdshs_drug_deaths_other_opioids = read_csv('raw_data/tdshs/tdshs_drug_deaths_other_opioids_2015_2020.csv')
+tdshs_drug_deaths_psychostimulants = read_csv('raw_data/tdshs/tdshs_drug_deaths_psychostimulants_2015_2020.csv')
+tdshs_drug_deaths_psychotropics = read_csv('raw_data/tdshs/tdshs_drug_deaths_psychotropics_2015_2020.csv')
+tdshs_drug_deaths_synthetics = read_csv('raw_data/tdshs/tdshs_drug_deaths_synthetics_2015_2020.csv')
+
+# Replace * with blank
+
+tdshs_drug_deaths_benzodiazepines = tdshs_drug_deaths_benzodiazepines %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_cannabis = tdshs_drug_deaths_cannabis %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_cocaine = tdshs_drug_deaths_cocaine %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_heroin = tdshs_drug_deaths_heroin %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_methadone = tdshs_drug_deaths_methadone %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_opioids = tdshs_drug_deaths_opioids %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_other_narcotics = tdshs_drug_deaths_other_narcotics %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_other_opioids = tdshs_drug_deaths_other_opioids %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_psychostimulants = tdshs_drug_deaths_psychostimulants %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_psychotropics = tdshs_drug_deaths_psychotropics %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+tdshs_drug_deaths_synthetics = tdshs_drug_deaths_synthetics %>% mutate_all(
+  function(x) {
+    str_replace(x, "\\*", "")
+  }
+)
+
+# Fix county capitalization
+
+tdshs_drug_deaths_benzodiazepines = tdshs_drug_deaths_benzodiazepines %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_cannabis = tdshs_drug_deaths_cannabis %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_cocaine = tdshs_drug_deaths_cocaine %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_heroin = tdshs_drug_deaths_heroin %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_methadone = tdshs_drug_deaths_methadone %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_opioids = tdshs_drug_deaths_opioids %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_other_narcotics = tdshs_drug_deaths_other_narcotics %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_other_opioids = tdshs_drug_deaths_other_opioids %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_psychostimulants = tdshs_drug_deaths_psychostimulants %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_psychotropics = tdshs_drug_deaths_psychotropics %>% mutate(County = str_to_title(County))
+tdshs_drug_deaths_synthetics = tdshs_drug_deaths_synthetics %>% mutate(County = str_to_title(County))
+
+
+# Merge Population - change year here.
+
+tmp_by = join_by('County' == 'County')
+tdshs_drug_deaths_benzodiazepines = left_join(tdshs_drug_deaths_benzodiazepines, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_cannabis = left_join(tdshs_drug_deaths_cannabis, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_cocaine = left_join(tdshs_drug_deaths_cocaine, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_heroin = left_join(tdshs_drug_deaths_heroin, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_methadone = left_join(tdshs_drug_deaths_methadone, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_opioids = left_join(tdshs_drug_deaths_opioids, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_other_narcotics = left_join(tdshs_drug_deaths_other_narcotics, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_other_opioids = left_join(tdshs_drug_deaths_other_opioids, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_psychostimulants = left_join(tdshs_drug_deaths_psychostimulants, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_psychotropics = left_join(tdshs_drug_deaths_psychotropics, county_populations[,c('County','X.2020')], tmp_by )
+tdshs_drug_deaths_synthetics = left_join(tdshs_drug_deaths_synthetics, county_populations[,c('County','X.2020')], tmp_by )
+
+
+
+# Rename columns - change year here.
+
+tdshs_drug_deaths_benzodiazepines = tdshs_drug_deaths_benzodiazepines %>% mutate(Accidental.Deaths.by.Benzodiazepines.per.100k = as.numeric(`2020`) / `X.2020` * 100000)
+tdshs_drug_deaths_cannabis = tdshs_drug_deaths_cannabis %>% mutate(Accidental.Deaths.by.Cannabis.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_cocaine = tdshs_drug_deaths_cocaine %>% mutate(Accidental.Deaths.by.Cocaine.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_heroin = tdshs_drug_deaths_heroin %>% mutate(Accidental.Deaths.by.Heroin.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_methadone = tdshs_drug_deaths_methadone %>% mutate(Accidental.Deaths.by.Methadone.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_opioids = tdshs_drug_deaths_opioids %>% mutate(Accidental.Deaths.by.Opioids.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_other_narcotics = tdshs_drug_deaths_other_narcotics %>% mutate(Accidental.Deaths.by.Other.Narcotics.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_other_opioids = tdshs_drug_deaths_other_opioids %>% mutate(Accidental.Deaths.by.Other.Opioids.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_psychostimulants = tdshs_drug_deaths_psychostimulants %>% mutate(Accidental.Deaths.by.Psychostimulants.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_psychotropics = tdshs_drug_deaths_psychotropics %>% mutate(Accidental.Deaths.by.Pyschotropics.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+tdshs_drug_deaths_synthetics = tdshs_drug_deaths_synthetics %>% mutate(Accidental.Deaths.by.Synthetics.per.100k = as.numeric(`2020`) / `X.2020` * 100000) 
+
+# Reduce
+tdshs_drug_deaths_benzodiazepines = tdshs_drug_deaths_benzodiazepines[,c(1,ncol(tdshs_drug_deaths_benzodiazepines))]
+tdshs_drug_deaths_cannabis = tdshs_drug_deaths_cannabis[,c(1,ncol(tdshs_drug_deaths_cannabis))]
+tdshs_drug_deaths_cocaine = tdshs_drug_deaths_cocaine[,c(1,ncol(tdshs_drug_deaths_cocaine))]
+tdshs_drug_deaths_heroin = tdshs_drug_deaths_heroin[,c(1,ncol(tdshs_drug_deaths_heroin))]
+tdshs_drug_deaths_methadone = tdshs_drug_deaths_methadone[,c(1,ncol(tdshs_drug_deaths_methadone))]
+tdshs_drug_deaths_opioids = tdshs_drug_deaths_opioids[,c(1,ncol(tdshs_drug_deaths_opioids))]
+tdshs_drug_deaths_other_narcotics = tdshs_drug_deaths_other_narcotics[,c(1,ncol(tdshs_drug_deaths_other_narcotics))]
+tdshs_drug_deaths_other_opioids = tdshs_drug_deaths_other_opioids[,c(1,ncol(tdshs_drug_deaths_other_opioids))]
+tdshs_drug_deaths_psychostimulants = tdshs_drug_deaths_psychostimulants[,c(1,ncol(tdshs_drug_deaths_psychostimulants))]
+tdshs_drug_deaths_psychotropics = tdshs_drug_deaths_psychotropics[,c(1,ncol(tdshs_drug_deaths_psychotropics))]
+tdshs_drug_deaths_synthetics = tdshs_drug_deaths_synthetics[,c(1,ncol(tdshs_drug_deaths_synthetics))]
+
+# Merge with county data
+tmp_by = join_by('Name' == 'County')
+counties = left_join(counties, tdshs_drug_deaths_benzodiazepines, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_cannabis, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_cocaine, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_heroin, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_methadone, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_opioids, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_other_narcotics, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_other_opioids, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_psychostimulants, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_psychotropics, tmp_by )
+counties = left_join(counties, tdshs_drug_deaths_synthetics, tmp_by )
+
+# Metadata - Update year here
+
+# *** #
+
+tmp_source = "Texas Department of State Health Services"
+tmp_link = "https://www.dshs.texas.gov/vital-statistics-data"
+tmp_year = 2020
+tmp_note = "Rates are calculated based on the deceased's county of residence. Details related to substance types are available at https://healthdata.dshs.texas.gov/dashboard/drugs-and-alcohol/opioids/drug-related-deaths."
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Benzodiazepines.per.100k",
+  "Accidental deaths attributed to benzodiazepines per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Cannabis.per.100k",
+  "Accidental deaths attributed to cannabis per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Cocaine.per.100k",
+  "Accidental deaths attributed to cocaine per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Heroin.per.100k",
+  "Accidental deaths attributed to heroin per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Methadone.per.100k",
+  "Accidental deaths attributed to methadone per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Opioids.per.100k",
+  "Accidental deaths attributed to opioids per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Other.Narcotics.per.100k",
+  "Accidental deaths attributed to other narcotics per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Other.Opioids.per.100k",
+  "Accidental deaths attributed to other opioids per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Psychostimulants.per.100k",
+  "Accidental deaths attributed to psychostimulants per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Pyschotropics.per.100k",
+  "Accidental deaths attributed to pyschotropics per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# *** #
+
+tmp_metadata = c(
+  "Accidental.Deaths.by.Synthetics.per.100k",
+  "Accidental deaths attributed to synthetics per 100,000 people.",
+  tmp_source,
+  tmp_link,
+  tmp_note,
+  tmp_year
+)
+
+counties_metadata = rbind(counties_metadata, tmp_metadata)
+
+# Delete vars
+rm(list = ls(, pattern = "tdshs_"))
+rm(list = ls(, pattern = "tmp"))
 
 
 
@@ -1075,7 +1665,6 @@ category_general = c(
 )
 
 category_social_context = c(
-  'CDC_ATSDR_SOC_VUL_RACE_ETHNICITY',
   'ACS_PCT_HH_LIMIT_ENGLISH',
   'ACS_PCT_VET',
   'ACS_MEDIAN_AGE',
@@ -1093,7 +1682,7 @@ category_social_context = c(
   'ACS_PCT_ASIAN',
   'ACS_PCT_BLACK',
   'ACS_PCT_HISPANIC',
-  'ACS_PCT_WHITE'
+  'ACS_PCT_WHITE_NONHISP'
 )
 
 
@@ -1115,7 +1704,7 @@ category_economic_context = c(
   'ACS_PCT_HH_FOOD_STMP',
   'ACS_MEDIAN_HOME_VALUE',
   'ACS_MEDIAN_RENT',
-  'AHRF_UNEMPLOYED_RATE'
+  'ACS_PCT_UNEMPLOY'
   
 )
 
@@ -1139,31 +1728,36 @@ category_physical_infrastructure = c(
   'ACS_PCT_COMMT_59MIN',
   'ACS_PCT_COMMT_60MINUP',
   'ACS_PCT_HU_NO_VEH',
-  'AHRF_PCT_GOOD_AQ',
   'AHRF_TXC_SITE_NO_DATA',
   'AHRF_TXC_SITE_CNTRL',
   'AHRF_TXC_SITE_NO_CNTRL',
-  'NCHS_URCS_2013',
-  'NHTSA_TRAFF_FATALITIES_RATE',
-  'NHTSA_TRAFF_FATALITIES_BAC_08_RATE',
-  'Alc.Establisments.per.100k'
+  'NCHS_URCS_2013'
 )
 
 
 category_healthcare_context = c(
+  'HPSA.Primary.Care.Score',
+  'HPSA.Primary.Care.FTE.Short',
+  'HPSA.Mental.FTE.Short',
+  'HPSA.Mental.Score',
+  'Accidental.Deaths.by.Benzodiazepines.per.100k',
+  'Accidental.Deaths.by.Cannabis.per.100k',
+  'Accidental.Deaths.by.Cocaine.per.100k',
+  'Accidental.Deaths.by.Heroin.per.100k',
+  'Accidental.Deaths.by.Methadone.per.100k',
+  'Accidental.Deaths.by.Opioids.per.100k',
+  'Accidental.Deaths.by.Other.Narcotics.per.100k',
+  'Accidental.Deaths.by.Other.Opioids.per.100k',
+  'Accidental.Deaths.by.Psychostimulants.per.100k',
+  'Accidental.Deaths.by.Pyschotropics.per.100k',
+  'Accidental.Deaths.by.Synthetics.per.100k',
   'ACS_PCT_MEDICAID_ANY',
   'ACS_PCT_MEDICARE_ONLY',
   'ACS_PCT_OTHER_INS',
   'ACS_PCT_UNINSURED',
-  'AHRF_HPSA_DENTIST',
-  'AHRF_HPSA_MENTAL',
-  'AHRF_HPSA_PRIM',
-  'AHRF_DENTISTS_RATE',
   'AHRF_NURSE_PRACT_RATE',
   'AHRF_PHYSICIAN_ASSIST_RATE',
   'AMFAR_SSP_RATE',
-  'AMFAR_MEDSAFAC_RATE',
-  'AMFAR_AMATFAC_RATE',
   'AMFAR_MEDMHFAC_RATE',
   'AMFAR_MHFAC_RATE',
   'CDCW_INJURY_DTH_RATE',
@@ -1176,8 +1770,6 @@ category_healthcare_context = c(
   'CHR_MENTAL_PROV_RATE',
   'HIFLD_MEDIAN_DIST_UC',
   'HIFLD_UC_RATE',
-  'LTC_AVG_OBS_REHOSP_RATE',
-  'LTC_AVG_OBS_SUCCESSFUL_DISC_RATE',
   'LTC_OCCUPANCY_RATE',
   'LTC_PCT_FOR_PROFIT',
   'LTC_PCT_MULTI_FAC',
@@ -1218,8 +1810,8 @@ category_healthcare_context = c(
   'LCDCs.per.100k',
   'LPCs.per.100k',
   'LCSWs.per.100k',
-  'LBSWs.per.100k',
-  'LMSWs.per.100k'
+  'Dentists.per.100k',
+  'Psychiatrists.per.100k'
 )
 
 # Add category column
@@ -1247,9 +1839,9 @@ counties = counties %>% rename(
   'Percent.Asian' = 'ACS_PCT_ASIAN',
   'Percent.Black' = 'ACS_PCT_BLACK',
   'Percent.Hispanic' = 'ACS_PCT_HISPANIC',
-  'Percent.White' = 'ACS_PCT_WHITE',
+  'Percent.White' = 'ACS_PCT_WHITE_NONHISP',
   'Percent.Households.No.Computer.Device' = 'ACS_PCT_HH_NO_COMP_DEV',
-  'Percent.Households.Smarphone.Only' = 'ACS_PCT_HH_SMARTPHONE_ONLY',
+  'Percent.Households.Smartphone.Only' = 'ACS_PCT_HH_SMARTPHONE_ONLY',
   'Percent.Households.No.Internet' = 'ACS_PCT_HH_NO_INTERNET',
   'GINI.Index' = 'ACS_GINI_INDEX',
   'Median.Household.Income.Asian' = 'ACS_MEDIAN_HH_INC_ASIAN',
@@ -1279,20 +1871,9 @@ counties = counties %>% rename(
   'Percent.Medicare.Only' = 'ACS_PCT_MEDICARE_ONLY',
   'Percent.Health.Insurance.Other' = 'ACS_PCT_OTHER_INS',
   'Percent.No.Health.Insurance' = 'ACS_PCT_UNINSURED',
-  'Percent.Unemployed' = 'AHRF_UNEMPLOYED_RATE',
-  'Percent.Days.Good.Air.Quality' = 'AHRF_PCT_GOOD_AQ',
-  'Toxic.Sites.Insufficient.Data' = 'AHRF_TXC_SITE_NO_DATA',
-  'Toxic.Sites.Under.Control' = 'AHRF_TXC_SITE_CNTRL',
-  'Toxic.Sites.Not.Under.Control' = 'AHRF_TXC_SITE_NO_CNTRL',
-  'Dentist.Shortage.Code' = 'AHRF_HPSA_DENTIST',
-  'Mental.Healthcare.Shortage.Code' = 'AHRF_HPSA_MENTAL',
-  'Primary.Care.Shortage.Code' = 'AHRF_HPSA_PRIM',
-  'Dentists.per.1k' = 'AHRF_DENTISTS_RATE',
-  'Nurse.Practitioners.per.1k' = 'AHRF_NURSE_PRACT_RATE',
-  'Physician.Assistants.per.1k' = 'AHRF_PHYSICIAN_ASSIST_RATE',
-  'Syringe.Exchange.Programs.per.1k' = 'AMFAR_SSP_RATE',
-  'Substance.Abuse.Facilities.Accepting.Medicare.per.1k' = 'AMFAR_MEDSAFAC_RATE',
-  'Substance.Abuse.Facilities.per.1k' = 'AMFAR_AMATFAC_RATE',
+  'Percent.Unemployed' = 'ACS_PCT_UNEMPLOY',
+  'Nurse.Practitioners.per.100k' = 'AHRF_NURSE_PRACT_RATE',
+  'Physician.Assistants.per.100k' = 'AHRF_PHYSICIAN_ASSIST_RATE',
   'Mental.Health.Facilities.Accepting.Medicare.per.1k' = 'AMFAR_MEDMHFAC_RATE',
   'Mental.Health.Facilities.per.1k' = 'AMFAR_MHFAC_RATE',
   'Deaths.from.Injury.per.100k' = 'CDCW_INJURY_DTH_RATE',
@@ -1305,9 +1886,7 @@ counties = counties %>% rename(
   'Mental.Health.Providers.per.100k' = 'CHR_MENTAL_PROV_RATE',
   'NCHS.Rural.Urban.Code' = 'NCHS_URCS_2013',
   'Median.Distance.to.Urgent.Care' = 'HIFLD_MEDIAN_DIST_UC',
-  'Urgent.Care.Orgs.per.1k' = 'HIFLD_UC_RATE',
-  'Average.Rehospitalization.Rate' = 'LTC_AVG_OBS_REHOSP_RATE',
-  'Average.Successful.Discharge.Rate' = 'LTC_AVG_OBS_SUCCESSFUL_DISC_RATE',
+  'Urgent.Care.Orgs.per.100k' = 'HIFLD_UC_RATE',
   'Nursing.Home.Occupancy.Rate' = 'LTC_OCCUPANCY_RATE',
   'Percent.Nursing.Homes.For.Profit' = 'LTC_PCT_FOR_PROFIT',
   'Percent.Nursing.Homes.Chain' = 'LTC_PCT_MULTI_FAC',
@@ -1316,7 +1895,7 @@ counties = counties %>% rename(
   'Depressive.Disorders.Rate.Medicare' = 'MMD_DEPR_DISD',
   'Personality.Disorders.Rate.Medicare' = 'MMD_PERSONALITY_DISD',
   'Opioid.Overuse.Disorder.Rate.Medicare' = 'MMD_OUD_IND',
-  'Percent.Clinicians.Accpeting.Medicaid' = 'PC_PCT_MEDICARE_APPRVD_FULL_AMT',
+  'Percent.Clinicians.Accepting.Medicaid' = 'PC_PCT_MEDICARE_APPRVD_FULL_AMT',
   'Median.Distance.to.Emergency.Department' = 'POS_MEDIAN_DIST_ED',
   'Median.Distance.to.Medical.Surgical.ICU' = 'POS_MEDIAN_DIST_MEDSURG_ICU',
   'Median.Distance.to.Trauma.Center' = 'POS_MEDIAN_DIST_TRAUMA',
@@ -1324,15 +1903,15 @@ counties = counties %>% rename(
   'Median.Distance.to.Obstetrics.Department' = 'POS_MEDIAN_DIST_OBSTETRICS',
   'Median.Distance.to.Health.Clinic' = 'POS_MEDIAN_DIST_CLINIC',
   'Median.Distance.to.Alcohol.Drug.Incare' = 'POS_MEDIAN_DIST_ALC',
-  'Health.Centers.per.1k' = 'POS_FQHC_RATE',
-  'Community.Mental.Health.Centers.per.1k' = 'POS_CMHC_RATE',
-  'Rural.Health.Clinics.per.1k' = 'POS_RHC_RATE',
-  'Home.Health.Agencies.per.1k' = 'POS_HHA_RATE',
-  'Hospices.per.1k' = 'POS_HOSPICE_RATE',
-  'Nursing.Facilities.per.1k' = 'POS_NF_RATE',
-  'Nursing.Facility.Beds.per.1k' = 'POS_NF_BEDS_RATE',
-  'Skilled.Nursing.Facilities.per.1k' = 'POS_SNF_RATE',
-  'Skilled.Nursing.Facility.Beds.per.1k' = 'POS_SNF_BEDS_RATE',
+  'Health.Centers.per.100k' = 'POS_FQHC_RATE',
+  'Community.Mental.Health.Centers.per.100k' = 'POS_CMHC_RATE',
+  'Rural.Health.Clinics.per.100k' = 'POS_RHC_RATE',
+  'Home.Health.Agencies.per.100k' = 'POS_HHA_RATE',
+  'Hospices.per.100k' = 'POS_HOSPICE_RATE',
+  'Nursing.Facilities.per.100k' = 'POS_NF_RATE',
+  'Nursing.Facility.Beds.per.100k' = 'POS_NF_BEDS_RATE',
+  'Skilled.Nursing.Facilities.per.100k' = 'POS_SNF_RATE',
+  'Skilled.Nursing.Facility.Beds.per.100k' = 'POS_SNF_BEDS_RATE',
   'Percent.Hospitals.Private.For.Profit' = 'POS_PCT_HOSP_FOR_PROFIT',
   'Percent.Hospitals.Non.Profit' = 'POS_PCT_HOSP_NON_PROFIT',
   'Percent.Hospitals.Government' = 'POS_PCT_HOSP_GOV',
@@ -1347,8 +1926,8 @@ counties = counties %>% rename(
   'Race.Ethnicity.Social.Vulnerability' = 'CDC_ATSDR_SOC_VUL_RACE_ETHNICITY',
   'Housing.Transport.Social.Vulnerability' = 'CDC_ATSDR_SOC_VUL_HOUSING_TRANSPORT',
   'Birth.Defects.per.10k' = 'TDSHS_BIRTH_DEFECTS_RATE',
-  'Traffic.Fatalities.per.100k' = 'NHTSA_TRAFF_FATALITIES_RATE',
-  'Traffic.Fatalities.BAC.08.per.100k' = 'NHTSA_TRAFF_FATALITIES_BAC_08_RATE'
+  #'Traffic.Fatalities.per.100k' = 'NHTSA_TRAFF_FATALITIES_RATE',
+  #'Traffic.Fatalities.BAC.08.per.100k' = 'NHTSA_TRAFF_FATALITIES_BAC_08_RATE'
 )
 
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'COUNTYFIPS',	'FIPS.Code'))
@@ -1362,9 +1941,9 @@ counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_P
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_ASIAN',	'Percent.Asian' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_BLACK',	'Percent.Black' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_HISPANIC',	'Percent.Hispanic' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_WHITE',	'Percent.White' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_WHITE_NONHISP',	'Percent.White' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_HH_NO_COMP_DEV',	'Percent.Households.No.Computer.Device' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_HH_SMARTPHONE_ONLY',	'Percent.Households.Smarphone.Only' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_HH_SMARTPHONE_ONLY',	'Percent.Households.Smartphone.Only' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_HH_NO_INTERNET',	'Percent.Households.No.Internet' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_GINI_INDEX',	'GINI.Index' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_MEDIAN_HH_INC_ASIAN',	'Median.Household.Income.Asian' ))
@@ -1394,20 +1973,9 @@ counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_P
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_MEDICARE_ONLY',	'Percent.Medicare.Only' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_OTHER_INS',	'Percent.Health.Insurance.Other' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_UNINSURED',	'Percent.No.Health.Insurance' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_UNEMPLOYED_RATE',	'Percent.Unemployed' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_PCT_GOOD_AQ',	'Percent.Days.Good.Air.Quality' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_TXC_SITE_NO_DATA',	'Toxic.Sites.Insufficient.Data' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_TXC_SITE_CNTRL',	'Toxic.Sites.Under.Control' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_TXC_SITE_NO_CNTRL',	'Toxic.Sites.Not.Under.Control' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_HPSA_DENTIST',	'Dentist.Shortage.Code' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_HPSA_MENTAL',	'Mental.Healthcare.Shortage.Code' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_HPSA_PRIM',	'Primary.Care.Shortage.Code' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_DENTISTS_RATE',	'Dentists.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_NURSE_PRACT_RATE',	'Nurse.Practitioners.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_PHYSICIAN_ASSIST_RATE',	'Physician.Assistants.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AMFAR_SSP_RATE',	'Syringe.Exchange.Programs.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AMFAR_MEDSAFAC_RATE',	'Substance.Abuse.Facilities.Accepting.Medicare.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AMFAR_AMATFAC_RATE',	'Substance.Abuse.Facilities.per.1k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'ACS_PCT_UNEMPLOY',	'Percent.Unemployed' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_NURSE_PRACT_RATE',	'Nurse.Practitioners.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AHRF_PHYSICIAN_ASSIST_RATE',	'Physician.Assistants.per.100k' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AMFAR_MEDMHFAC_RATE',	'Mental.Health.Facilities.Accepting.Medicare.per.1k' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'AMFAR_MHFAC_RATE',	'Mental.Health.Facilities.per.1k' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'CDCW_INJURY_DTH_RATE',	'Deaths.from.Injury.per.100k' ))
@@ -1420,9 +1988,7 @@ counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'CDCW_
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'CHR_MENTAL_PROV_RATE',	'Mental.Health.Providers.per.100k' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'NCHS_URCS_2013',	'NCHS.Rural.Urban.Code' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'HIFLD_MEDIAN_DIST_UC',	'Median.Distance.to.Urgent.Care' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'HIFLD_UC_RATE',	'Urgent.Care.Orgs.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'LTC_AVG_OBS_REHOSP_RATE',	'Average.Rehospitalization.Rate' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'LTC_AVG_OBS_SUCCESSFUL_DISC_RATE',	'Average.Successful.Discharge.Rate' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'HIFLD_UC_RATE',	'Urgent.Care.Orgs.per.100k' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'LTC_OCCUPANCY_RATE',	'Nursing.Home.Occupancy.Rate' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'LTC_PCT_FOR_PROFIT',	'Percent.Nursing.Homes.For.Profit' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'LTC_PCT_MULTI_FAC',	'Percent.Nursing.Homes.Chain' ))
@@ -1431,7 +1997,7 @@ counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'MMD_B
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'MMD_DEPR_DISD',	'Depressive.Disorders.Rate.Medicare' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'MMD_PERSONALITY_DISD',	'Personality.Disorders.Rate.Medicare' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'MMD_OUD_IND',	'Opioid.Overuse.Disorder.Rate.Medicare' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'PC_PCT_MEDICARE_APPRVD_FULL_AMT',	'Percent.Clinicians.Accpeting.Medicaid' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'PC_PCT_MEDICARE_APPRVD_FULL_AMT',	'Percent.Clinicians.Accepting.Medicaid' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_MEDIAN_DIST_ED',	'Median.Distance.to.Emergency.Department' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_MEDIAN_DIST_MEDSURG_ICU',	'Median.Distance.to.Medical.Surgical.ICU' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_MEDIAN_DIST_TRAUMA',	'Median.Distance.to.Trauma.Center' ))
@@ -1439,15 +2005,15 @@ counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_M
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_MEDIAN_DIST_OBSTETRICS',	'Median.Distance.to.Obstetrics.Department' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_MEDIAN_DIST_CLINIC',	'Median.Distance.to.Health.Clinic' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_MEDIAN_DIST_ALC',	'Median.Distance.to.Alcohol.Drug.Incare' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_FQHC_RATE',	'Health.Centers.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_CMHC_RATE',	'Community.Mental.Health.Centers.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_RHC_RATE',	'Rural.Health.Clinics.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_HHA_RATE',	'Home.Health.Agencies.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_HOSPICE_RATE',	'Hospices.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_NF_RATE',	'Nursing.Facilities.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_NF_BEDS_RATE',	'Nursing.Facility.Beds.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_SNF_RATE',	'Skilled.Nursing.Facilities.per.1k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_SNF_BEDS_RATE',	'Skilled.Nursing.Facility.Beds.per.1k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_FQHC_RATE',	'Health.Centers.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_CMHC_RATE',	'Community.Mental.Health.Centers.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_RHC_RATE',	'Rural.Health.Clinics.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_HHA_RATE',	'Home.Health.Agencies.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_HOSPICE_RATE',	'Hospices.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_NF_RATE',	'Nursing.Facilities.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_NF_BEDS_RATE',	'Nursing.Facility.Beds.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_SNF_RATE',	'Skilled.Nursing.Facilities.per.100k' ))
+counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_SNF_BEDS_RATE',	'Skilled.Nursing.Facility.Beds.per.100k' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_PCT_HOSP_FOR_PROFIT',	'Percent.Hospitals.Private.For.Profit' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_PCT_HOSP_NON_PROFIT',	'Percent.Hospitals.Non.Profit' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'POS_PCT_HOSP_GOV',	'Percent.Hospitals.Government' ))
@@ -1462,8 +2028,8 @@ counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'CDC_A
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'CDC_ATSDR_SOC_VUL_RACE_ETHNICITY',	'Race.Ethnicity.Social.Vulnerability' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'CDC_ATSDR_SOC_VUL_HOUSING_TRANSPORT',	'Housing.Transport.Social.Vulnerability' ))
 counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'TDSHS_BIRTH_DEFECTS_RATE',	'Birth.Defects.per.10k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'NHTSA_TRAFF_FATALITIES_RATE',	'Traffic.Fatalities.per.100k' ))
-counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'NHTSA_TRAFF_FATALITIES_BAC_08_RATE',	'Traffic.Fatalities.BAC.08.per.100k' ))
+#counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'NHTSA_TRAFF_FATALITIES_RATE',	'Traffic.Fatalities.per.100k' ))
+#counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'NHTSA_TRAFF_FATALITIES_BAC_08_RATE',	'Traffic.Fatalities.BAC.08.per.100k' ))
 
 
 
@@ -1471,135 +2037,142 @@ counties_metadata = counties_metadata %>% mutate(name = str_replace(name, 'NHTSA
 
 # Reorder
 
-counties = counties %>% relocate(
-  c(
-    'County',
-    'FIPS.Code',
-    'Population' ,
-    'Overall.Social.Vulnerability' ,
-    'Socioeconomic.Social.Vulnerability' ,
-    'Household.Characteristics.Social.Vulnerability' ,
-    'Race.Ethnicity.Social.Vulnerability' ,
-    'Housing.Transport.Social.Vulnerability' ,
-    'Median.Age' ,
-    'Percent.Age.0.to.17' ,
-    'Percent.Age.Over.65' ,
-    'Percent.Asian' ,
-    'Percent.Black' ,
-    'Percent.Hispanic' ,
-    'Percent.White' ,
-    'Percent.Households_Limited_English' ,
-    'Percent.Veteran' ,
-    'NCHS.Rural.Urban.Code' ,
-    'Percent.Households.No.Computer.Device' ,
-    'Percent.Households.Smarphone.Only' ,
-    'Percent.Households.No.Internet' ,
-    'Percent.Commute.Less.than.15min' ,
-    'Percent.Commute.15min.to.29min' ,
-    'Percent.Commute.30min.to.59min' ,
-    'Percent.Commute.60min.or.More' ,
-    'Percent.Housing.Units.No.Vehicle' ,
-    'Alc.Establisments.per.100k',
-    'Percent.Days.Good.Air.Quality' ,
-    'Toxic.Sites.Insufficient.Data' ,
-    'Toxic.Sites.Under.Control' ,
-    'Toxic.Sites.Not.Under.Control' ,
-    'GINI.Index' ,
-    'Percent.Unemployed' ,
-    'Median.Household.Income' ,
-    'Median.Household.Income.Asian' ,
-    'Median.Household.Income.Black' ,
-    'Median.Household.Income.Hispanic' ,
-    'Median.Household.Income.White' ,
-    'Percent.in.Poverty' ,
-    'Percent.in.Poverty.Asian' ,
-    'Percent.in.Poverty.Black' ,
-    'Percent.in.Poverty.Hispanic' ,
-    'Percent.in.Poverty.White' ,
-    'Percent.Households.Food.Stamps' ,
-    'Median.Home.Value' ,
-    'Median.Rent' ,
-    'Percent.Less.than.Highschool' ,
-    'Percent.Highschool.Graduate' ,  
-    'Percent.with.Associate.Degree' ,
-    'Percent.with.Bachelor.Degree' ,
-    'Percent.with.Graduate.Degree' ,
-    'Percent.Medicaid' ,
-    'Percent.Medicare.Only' ,
-    'Percent.Health.Insurance.Other' ,
-    'Percent.No.Health.Insurance' ,
-    'Obesity.Rate' ,
-    'Diabetes.Rate' ,
-    'Binge.Drinking.Rate' ,
-    'Smoking.Rate' ,
-    'Depression.Rate' ,
-    'Anxiety.Disorders.Rate.Medicare' ,
-    'Bipolar.Disorder.Rate.Medicare' ,
-    'Depressive.Disorders.Rate.Medicare' ,
-    'Personality.Disorders.Rate.Medicare' ,
-    'Opioid.Overuse.Disorder.Rate.Medicare' ,
-    'Birth.Defects.per.10k' ,
-    'Deaths.from.Injury.per.100k' ,
-    'Deaths.from.Transport.Accident.per.100k' ,
-    'Deaths.from.Suicide.per.100k' ,
-    'Deaths.from.Assault.per.100k' ,
-    'Maternal.Deaths.per.100k' ,
-    'Opioid.Overdose.Deaths.per.100k' ,
-    'Drug.Poisoning.Deaths.per.100k' ,
-    'Traffic.Fatalities.per.100k' ,
-    'Traffic.Fatalities.BAC.08.per.100k' ,
-    'Opioid.Dispensing.Rate.per.100',
-    'PCPs.per.100k',
-    'LCDCs.per.100k',
-    'LPCs.per.100k',
-    'LCSWs.per.100k',
-    'LBSWs.per.100k',
-    'LMSWs.per.100k',
-    'Dentists.per.1k' ,
-    'Nurse.Practitioners.per.1k' ,
-    'Physician.Assistants.per.1k' ,
-    'Mental.Health.Providers.per.100k' ,
-    'Percent.Clinicians.Accpeting.Medicaid' ,
-    'Dentist.Shortage.Code' ,
-    'Mental.Healthcare.Shortage.Code' ,
-    'Primary.Care.Shortage.Code' ,
-    'Urgent.Care.Orgs.per.1k' ,
-    'Health.Centers.per.1k' ,
-    'Community.Mental.Health.Centers.per.1k' ,
-    'Rural.Health.Clinics.per.1k' ,
-    'Home.Health.Agencies.per.1k' ,
-    'Hospices.per.1k' ,
-    'Nursing.Facilities.per.1k' ,
-    'Nursing.Facility.Beds.per.1k' ,
-    'Skilled.Nursing.Facilities.per.1k' ,
-    'Skilled.Nursing.Facility.Beds.per.1k' ,
-    'Nursing.Home.Occupancy.Rate',
-    'Percent.Nursing.Homes.For.Profit',
-    'Percent.Nursing.Homes.Chain',
-    'Average.Rehospitalization.Rate' ,
-    'Average.Successful.Discharge.Rate' ,
-    'Percent.Hospitals.Private.For.Profit' ,
-    'Percent.Hospitals.Non.Profit' ,
-    'Percent.Hospitals.Government',
-    'Syringe.Exchange.Programs.per.1k' ,
-    'Substance.Abuse.Facilities.per.1k' ,
-    'Substance.Abuse.Facilities.Accepting.Medicare.per.1k' ,
-    'Mental.Health.Facilities.per.1k' ,
-    'Mental.Health.Facilities.Accepting.Medicare.per.1k' ,
-    'Median.Distance.to.Urgent.Care' ,
-    'Median.Distance.to.Emergency.Department' ,
-    'Median.Distance.to.Medical.Surgical.ICU' ,
-    'Median.Distance.to.Trauma.Center' ,
-    'Median.Distance.to.Pediatric.ICU' ,
-    'Median.Distance.to.Obstetrics.Department' ,
-    'Median.Distance.to.Health.Clinic' ,
-    'Median.Distance.to.Alcohol.Drug.Incare' 
-  )
+variable_order = c(
+  'County',
+  'State',
+  'FIPS.Code',
+  'Population',
+  'Economic.Region',
+  'Overall.Social.Vulnerability' ,
+  'Socioeconomic.Social.Vulnerability' ,
+  'Household.Characteristics.Social.Vulnerability' ,
+  'Race.Ethnicity.Social.Vulnerability' ,
+  'Housing.Transport.Social.Vulnerability' ,
+  'Median.Age' ,
+  'Percent.Age.0.to.17' ,
+  'Percent.Age.Over.65' ,
+  'Percent.Asian' ,
+  'Percent.Black' ,
+  'Percent.Hispanic' ,
+  'Percent.White' ,
+  'Percent.Households_Limited_English' ,
+  'Percent.Veteran' ,
+  'NCHS.Rural.Urban.Code' ,
+  'Percent.Households.No.Computer.Device' ,
+  'Percent.Households.Smartphone.Only' ,
+  'Percent.Households.No.Internet' ,
+  'Percent.Commute.Less.than.15min' ,
+  'Percent.Commute.15min.to.29min' ,
+  'Percent.Commute.30min.to.59min' ,
+  'Percent.Commute.60min.or.More' ,
+  'Percent.Housing.Units.No.Vehicle' ,
+  'GINI.Index' ,
+  'Percent.Unemployed' ,
+  'Median.Household.Income' ,
+  'Median.Household.Income.Asian' ,
+  'Median.Household.Income.Black' ,
+  'Median.Household.Income.Hispanic' ,
+  'Median.Household.Income.White' ,
+  'Percent.in.Poverty' ,
+  'Percent.in.Poverty.Asian' ,
+  'Percent.in.Poverty.Black' ,
+  'Percent.in.Poverty.Hispanic' ,
+  'Percent.in.Poverty.White' ,
+  'Percent.Households.Food.Stamps' ,
+  'Median.Home.Value' ,
+  'Median.Rent' ,
+  'Percent.Less.than.Highschool' ,
+  'Percent.Highschool.Graduate' ,  
+  'Percent.with.Associate.Degree' ,
+  'Percent.with.Bachelor.Degree' ,
+  'Percent.with.Graduate.Degree' ,
+  'Percent.Medicaid' ,
+  'Percent.Medicare.Only' ,
+  'Percent.Health.Insurance.Other' ,
+  'Percent.No.Health.Insurance' ,
+  'Obesity.Rate' ,
+  'Diabetes.Rate' ,
+  'Binge.Drinking.Rate' ,
+  'Smoking.Rate' ,
+  'Depression.Rate' ,
+  'Anxiety.Disorders.Rate.Medicare' ,
+  'Bipolar.Disorder.Rate.Medicare' ,
+  'Depressive.Disorders.Rate.Medicare' ,
+  'Personality.Disorders.Rate.Medicare' ,
+  'Opioid.Overuse.Disorder.Rate.Medicare' ,
+  'Birth.Defects.per.10k' ,
+  'Deaths.from.Injury.per.100k' ,
+  'Deaths.from.Transport.Accident.per.100k' ,
+  'Deaths.from.Suicide.per.100k',
+  'Deaths.from.Assault.per.100k',
+  'Accidental.Deaths.by.Benzodiazepines.per.100k',
+  'Accidental.Deaths.by.Cannabis.per.100k',
+  'Accidental.Deaths.by.Cocaine.per.100k',
+  'Accidental.Deaths.by.Heroin.per.100k',
+  'Accidental.Deaths.by.Methadone.per.100k',
+  'Accidental.Deaths.by.Opioids.per.100k',
+  'Accidental.Deaths.by.Other.Narcotics.per.100k',
+  'Accidental.Deaths.by.Other.Opioids.per.100k',
+  'Accidental.Deaths.by.Psychostimulants.per.100k',
+  'Accidental.Deaths.by.Pyschotropics.per.100k',
+  'Accidental.Deaths.by.Synthetics.per.100k',
+  'Maternal.Deaths.per.100k' ,
+  'Opioid.Overdose.Deaths.per.100k' ,
+  'Drug.Poisoning.Deaths.per.100k' ,
+  #'Traffic.Fatalities.per.100k' ,
+  #'Traffic.Fatalities.BAC.08.per.100k' ,
+  'Opioid.Dispensing.Rate.per.100',
+  'HPSA.Primary.Care.Score',
+  'HPSA.Primary.Care.FTE.Short',
+  'HPSA.Mental.FTE.Short',
+  'HPSA.Mental.Score',
+  'PCPs.per.100k',
+  'Nurse.Practitioners.per.100k' ,
+  'Physician.Assistants.per.100k' ,
+  'Dentists.per.100k',
+  'LCDCs.per.100k',
+  'LPCs.per.100k',
+  'LCSWs.per.100k',
+  'Psychiatrists.per.100k',
+  'Mental.Health.Providers.per.100k' ,
+  'Urgent.Care.Orgs.per.100k' ,
+  'Health.Centers.per.100k' ,
+  'Community.Mental.Health.Centers.per.100k' ,
+  'Rural.Health.Clinics.per.100k' ,
+  'Home.Health.Agencies.per.100k' ,
+  'Hospices.per.100k' ,
+  'Nursing.Facilities.per.100k' ,
+  'Nursing.Facility.Beds.per.100k' ,
+  'Skilled.Nursing.Facilities.per.100k' ,
+  'Skilled.Nursing.Facility.Beds.per.100k' ,
+  'Mental.Health.Facilities.per.1k' ,
+  'Mental.Health.Facilities.Accepting.Medicare.per.1k' ,
+  'Percent.Clinicians.Accepting.Medicaid' ,
+  'Percent.Nursing.Homes.For.Profit',
+  'Percent.Nursing.Homes.Chain',
+  'Percent.Hospitals.Private.For.Profit' ,
+  'Percent.Hospitals.Non.Profit' ,
+  'Percent.Hospitals.Government',
+  'Nursing.Home.Occupancy.Rate',
+  'Median.Distance.to.Urgent.Care' ,
+  'Median.Distance.to.Emergency.Department' ,
+  'Median.Distance.to.Medical.Surgical.ICU' ,
+  'Median.Distance.to.Trauma.Center' ,
+  'Median.Distance.to.Pediatric.ICU' ,
+  'Median.Distance.to.Obstetrics.Department' ,
+  'Median.Distance.to.Health.Clinic' ,
+  'Median.Distance.to.Alcohol.Drug.Incare'
 )
+
+counties = counties %>% relocate(all_of(variable_order))
+
+# Reorder metadata
+counties_metadata = counties_metadata %>% arrange(match(name, variable_order))
+
 
 # Make sure all variables are in metadata and not duplicated
 tmp_cols_in_metadata = !colnames(counties) %in% counties_metadata$name
-length(tmp_cols_in_metadata[tmp_cols_in_metadata == TRUE]) # should give 0
+length(tmp_cols_in_metadata[tmp_cols_in_metadata == TRUE]) # should give 0 - 1 if state isn't in metadata
 
 tmp_metadata_in_cols = !counties_metadata$name %in% colnames(counties)
 length(tmp_metadata_in_cols[tmp_metadata_in_cols == TRUE]) # should give 0
@@ -1632,28 +2205,74 @@ rm(list = ls(, pattern = "tmp"))
 #
 #######################################
 
+write.csv(texas, file="raw_data/texas.csv", row.names = FALSE)
+write.csv(texas, file="~/tchn/_data/texas.csv", row.names = FALSE)
+
+
 counties_metadata = counties_metadata %>% arrange(
   category
 )
 
+# Calculate medians for everything
+tmp = counties %>% summarise_all(
+  funs(median),
+  na.rm = TRUE
+)
+
+tmp$County = "State Median"
+
+# Make a separate file for our visualizations, because we only want to use some of these medians. 
+counties_medians = rbind(counties, tmp)
+
 write.csv(counties_metadata, file="output/data/tchn_metadata_latest.csv", row.names = FALSE)
 write.csv(counties, file="output/data/tchn_latest.csv", row.names = FALSE)
+write.csv(counties_medians, file="output/data/tchn_medians_latest.csv", row.names = FALSE)
 
 
 # Read the file back in to flatten, convert to character, replace NAs and save again.
 counties = read_csv('output/data/tchn_latest.csv')
-
 counties = counties %>%
   mutate(across(everything(), as.character))
-
 counties[is.na(counties)] = ""
 
+
+# Also replace the - that is used in a few places
+counties = counties %>%
+  mutate_all(~gsub('-', '', .))
+
 write.csv(counties, file="output/data/tchn_latest.csv", row.names = FALSE)
+
+
+
+counties_medians = read_csv('output/data/tchn_medians_latest.csv')
+counties_medians = counties_medians %>%
+  mutate(across(everything(), as.character))
+counties_medians[is.na(counties_medians)] = ""
+write.csv(counties_medians, file="output/data/tchn_medians_latest.csv", row.names = FALSE)
+
+
+
+# Make long for visualizations
+counties_long = counties_medians %>% pivot_longer(
+  !County
+)
+
+write.csv(counties_long, file="output/data/tchn_long_latest.csv", row.names = FALSE)
 
 write.csv(
   counties, 
   file=paste(
-    "output/data/tchn_", 
+    "output/data/archive/tchn_", 
+    format(Sys.time(), "%Y%m%d"), 
+    ".csv",
+    collapse = "",
+    sep="") 
+)
+
+write.csv(
+  counties_metadata, 
+  file=paste(
+    "output/data/archive/tchn_metadata_", 
     format(Sys.time(), "%Y%m%d"), 
     ".csv",
     collapse = "",
@@ -1664,6 +2283,162 @@ write.csv(
 
 
 
+#####################################
+# PROCESSING THAT DOESN'T FEED INTO THE MAIN FILE
+#
+######################################
+
+
+
+
+
+
+
+
+######################################
+
+# SUICIDE DATA
+#
+# We have rates from SDOH, so we use the TDSHS data to make longitudinal files
+#
+# Gets downloaded manually every year from:
+# https://healthdata.dshs.texas.gov/dashboard/births-and-deaths/deaths
+#
+# Cause of death: 
+#   intentional self-harm (both); 
+#   intentional self-harm from firearm; 
+#
+#######################################
+
+# Read
+tdshs_suicide_2015 = read.csv('raw_data/tdshs/tdshs_suicide_2015.csv')
+tdshs_suicide_2016 = read.csv('raw_data/tdshs/tdshs_suicide_2016.csv')
+tdshs_suicide_2017 = read.csv('raw_data/tdshs/tdshs_suicide_2017.csv')
+tdshs_suicide_2018 = read.csv('raw_data/tdshs/tdshs_suicide_2018.csv')
+tdshs_suicide_2019 = read.csv('raw_data/tdshs/tdshs_suicide_2019.csv')
+tdshs_suicide_2020 = read.csv('raw_data/tdshs/tdshs_suicide_2020.csv')
+
+tdshs_suicide_2015$Year = 2015
+tdshs_suicide_2016$Year = 2016
+tdshs_suicide_2017$Year = 2017
+tdshs_suicide_2018$Year = 2018
+tdshs_suicide_2019$Year = 2019
+tdshs_suicide_2020$Year = 2020
+
+
+# Merge
+tdshs_suicide = rbind(
+  tdshs_suicide_2015,
+  tdshs_suicide_2016,
+  tdshs_suicide_2017,
+  tdshs_suicide_2018,
+  tdshs_suicide_2019,
+  tdshs_suicide_2020
+)
+
+# Reduce
+tdshs_suicide = select(tdshs_suicide, c(X,All.Deaths,Year))
+tdshs_suicide = tdshs_suicide %>% rename(
+  County = X,
+  TDSHS_DEATHS_SUICIDE = All.Deaths
+)
+
+tdshs_suicide = tdshs_suicide[tdshs_suicide$TDSHS_DEATHS_SUICIDE != "---",]
+
+# Fix columns
+tdshs_suicide$TDSHS_DEATHS_SUICIDE = as.numeric(tdshs_suicide$TDSHS_DEATHS_SUICIDE)
+
+
+# Make logitudinal and save
+tdshs_suicide_longitudinal = pivot_wider(
+  tdshs_suicide,
+  names_from = Year,
+  values_from = TDSHS_DEATHS_SUICIDE
+)
+
+tdshs_suicide_longitudinal = tdshs_suicide_longitudinal %>% arrange(
+  County
+)
+
+write.csv(
+  tdshs_suicide_longitudinal,
+  file = 'output/data/tdshs_suicide_longitudinal.csv',
+  row.names = FALSE
+)
+
+write.csv(
+  tdshs_suicide,
+  file = 'output/data/tdshs_suicide_long.csv',
+  row.names = FALSE
+)
+
+
+
+
+# Repeat for firearms
+
+tdshs_suicide_firearms_2015 = read.csv('raw_data/tdshs/tdshs_suicide_firearms_2015.csv')
+tdshs_suicide_firearms_2016 = read.csv('raw_data/tdshs/tdshs_suicide_firearms_2016.csv')
+tdshs_suicide_firearms_2017 = read.csv('raw_data/tdshs/tdshs_suicide_firearms_2017.csv')
+tdshs_suicide_firearms_2018 = read.csv('raw_data/tdshs/tdshs_suicide_firearms_2018.csv')
+tdshs_suicide_firearms_2019 = read.csv('raw_data/tdshs/tdshs_suicide_firearms_2019.csv')
+tdshs_suicide_firearms_2020 = read.csv('raw_data/tdshs/tdshs_suicide_firearms_2020.csv')
+
+tdshs_suicide_firearms_2015$Year = 2015
+tdshs_suicide_firearms_2016$Year = 2016
+tdshs_suicide_firearms_2017$Year = 2017
+tdshs_suicide_firearms_2018$Year = 2018
+tdshs_suicide_firearms_2019$Year = 2019
+tdshs_suicide_firearms_2020$Year = 2020
+
+
+# Merge
+tdshs_suicide_firearms = rbind(
+  tdshs_suicide_firearms_2015,
+  tdshs_suicide_firearms_2016,
+  tdshs_suicide_firearms_2017,
+  tdshs_suicide_firearms_2018,
+  tdshs_suicide_firearms_2019,
+  tdshs_suicide_firearms_2020
+)
+
+# Reduce
+tdshs_suicide_firearms = select(tdshs_suicide_firearms, c(X,All.Deaths,Year))
+tdshs_suicide_firearms = tdshs_suicide_firearms %>% rename(
+  County = X,
+  TDSHS_DEATHS_SUICIDE = All.Deaths
+)
+
+# Fix columns
+tdshs_suicide_firearms$TDSHS_DEATHS_SUICIDE = as.numeric(tdshs_suicide_firearms$TDSHS_DEATHS_SUICIDE)
+
+# Make logitudinal and save
+tdshs_suicide_firearms_longitudinal = pivot_wider(
+  tdshs_suicide_firearms,
+  names_from = Year,
+  values_from = TDSHS_DEATHS_SUICIDE
+)
+
+tdshs_suicide_firearms_longitudinal = tdshs_suicide_firearms_longitudinal %>% arrange(
+  County
+)
+
+write.csv(
+  tdshs_suicide_firearms_longitudinal,
+  file = 'output/data/tdshs_suicide_firearms_longitudinal.csv',
+  row.names = FALSE
+)
+
+write.csv(
+  tdshs_suicide_firearms,
+  file = 'output/data/tdshs_suicide_firearms_long.csv',
+  row.names = FALSE
+)
+
+
+
+# Clean up
+rm(list = ls(, pattern = "tdshs_suicide"))
 
 
 
@@ -1679,19 +2454,10 @@ write.csv(
 
 
 
-# ######################################           Unfinished -- replace with sdoh?
-# # HEALTHCARE PROVIDERS
-# #
-# # Gets downloaded manually every year from:
-# # https://data.hrsa.gov/topics/health-workforce/ahrf
-# #
-# # Select category and Texas. Actual years are listed in source column.
-# #
-# #######################################
-# 
-# hrsa_md_2020 = read.csv('raw_data/hrsa/hrsa_md_2020.csv')
-# 
-# 
+
+
+
+
 
 
 
@@ -1873,93 +2639,6 @@ write.csv(
 
 
 
-
-
-######################################.   This is in SDOH, but we can use the below if we want longitudinal
-
-# PROCESS AND MERGE SUICIDE DATA
-#
-# Gets downloaded manually every year from:
-# https://healthdata.dshs.texas.gov/dashboard/births-and-deaths/deaths
-#
-# Cause of death: intentional self-harm (both)
-#
-#######################################
-
-# # Read
-# tmp_by = join_by('X' == 'County')
-# 
-# tdshs_suicide_2015 = read.csv('raw_data/tdshs/tdshs_suicide_2015.csv')
-# #tdshs_suicide_2015 = left_join(tdshs_suicide_2015, county_populations[`2015`], tmp_by )
-# 
-# tdshs_suicide_2016 = read.csv('raw_data/tdshs/tdshs_suicide_2016.csv')
-# tdshs_suicide_2017 = read.csv('raw_data/tdshs/tdshs_suicide_2017.csv')
-# tdshs_suicide_2018 = read.csv('raw_data/tdshs/tdshs_suicide_2018.csv')
-# tdshs_suicide_2019 = read.csv('raw_data/tdshs/tdshs_suicide_2019.csv')
-# tdshs_suicide_2020 = read.csv('raw_data/tdshs/tdshs_suicide_2020.csv')
-# 
-# tdshs_suicide_2015$Year = 2015
-# tdshs_suicide_2016$Year = 2016
-# tdshs_suicide_2017$Year = 2017
-# tdshs_suicide_2018$Year = 2018
-# tdshs_suicide_2019$Year = 2019
-# tdshs_suicide_2020$Year = 2020
-# 
-# 
-# # Merge
-# tdshs_suicide = rbind(
-#   tdshs_suicide_2015,
-#   tdshs_suicide_2016,
-#   tdshs_suicide_2017,
-#   tdshs_suicide_2018,
-#   tdshs_suicide_2019,
-#   tdshs_suicide_2020
-#   )
-# 
-# # Reduce
-# tdshs_suicide = select(tdshs_suicide, c(X,All.Deaths,Year))
-# tdshs_suicide = tdshs_suicide %>% rename(
-#   County = X,
-#   TDSHS_DEATHS_SUICIDE = All.Deaths
-# )
-# 
-# # Fix columns
-# tdshs_suicide$TDSHS_DEATHS_SUICIDE = as.numeric(tdshs_suicide$TDSHS_DEATHS_SUICIDE)
-# 
-# # Reduce to latest year and merge
-# tdshs_suicide_latest =  tdshs_suicide %>% 
-#   filter(Year == max(Year))
-# 
-# tdshs_suicide_latest = select(tdshs_suicide_latest, -c('Year'))
-# 
-# tmp_by = join_by('Name' == 'County')
-# counties = left_join(counties, tdshs_suicide_latest, tmp_by )
-# 
-# # Make logitudinal and save
-# tdshs_suicide_longitudinal = pivot_wider(
-#   tdshs_suicide,
-#   names_from = Year,
-#   values_from = Deaths_Suicide
-# )
-# 
-# tdshs_suicide_longitudinal = tdshs_suicide_longitudinal %>% arrange(
-#   County
-# )
-# 
-# write.csv(
-#   tdshs_suicide_longitudinal, 
-#   file = 'output/data/tdshs_suicide_longitudinal.csv', 
-#   row.names = FALSE
-# )
-# 
-# write.csv(
-#   tdshs_suicide, 
-#   file = 'output/data/tdshs_suicide_long.csv', 
-#   row.names = FALSE
-# )
-# 
-# # Clean up
-# rm(list = ls(, pattern = "tdshs_suicide"))
 
 
 
